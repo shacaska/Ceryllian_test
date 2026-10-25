@@ -1,0 +1,1867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Ceryllian Duel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Grenze:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a narrow field kit. Your cards (your stamina and your life) on top, the street as a
+   7-stone track, his card beside your two beats, then your hand and fatigue pile. Lantern amber is
+   the accent; anything turned to its Nightmare side burns rose. Dark-first: a night infiltration. */
+:root{
+  --bg:#12171d;
+  --surface:#1a2129;
+  --surface-2:#232c36;
+  --line:#334150;
+  --fg:#e8e2d4;
+  --muted:#98a2ab;
+  --sab:#86bcd2;
+  --exert:#c9b6f0;
+  --wound:#e0675a;
+  --ok:#7dbb8a;
+  --lamp-0:#e9a840;
+  --lamp-1:#b9cc5c;
+  --lamp-2:#e0608a;
+  --lamp:var(--lamp-0);
+  --nm:var(--lamp-2);
+  --on-lamp:#151a20;
+  --back-a:#1d2630;
+  --back-b:#252f3b;
+  --f-display:'Grenze','Palatino Linotype',Palatino,Georgia,serif;
+  --f-body:'Alegreya Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#e6eaee; --surface:#f6f7f8; --surface-2:#dde3e8; --line:#c0c9d1;
+    --fg:#18212a; --muted:#56626d; --sab:#22698a; --exert:#6a4bb0; --wound:#b2392e; --ok:#33774a;
+    --lamp-0:#a35f0a; --lamp-1:#5b7612; --lamp-2:#a3234f; --on-lamp:#ffffff;
+    --back-a:#d2dae1; --back-b:#c4ced8;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#e6eaee; --surface:#f6f7f8; --surface-2:#dde3e8; --line:#c0c9d1;
+  --fg:#18212a; --muted:#56626d; --sab:#22698a; --exert:#6a4bb0; --wound:#b2392e; --ok:#33774a;
+  --lamp-0:#a35f0a; --lamp-1:#5b7612; --lamp-2:#a3234f; --on-lamp:#ffffff;
+  --back-a:#d2dae1; --back-b:#c4ced8;
+  color-scheme:light;
+}
+:root[data-stage="1"]{--lamp:var(--lamp-1)}
+:root[data-stage="2"]{--lamp:var(--lamp-2)}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--fg);
+  font-family:var(--f-body);font-size:16px;line-height:1.4;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:14px 40px;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sab);outline-offset:2px}
+.app{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+/* Header */
+.top{display:flex;flex-direction:column;gap:10px}
+.title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.eyebrow{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:600;font-size:2.1rem;line-height:.95;margin:2px 0 0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--lamp);transition:color .6s}
+.matchup{font-size:.9rem;color:var(--muted)}
+.dials{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:.84rem;cursor:pointer;color:var(--fg)}
+.dgrid-wrap{overflow-x:auto}
+.dgrid{border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums;min-width:100%}
+.dgrid th,.dgrid td{border:1px solid var(--line);padding:7px 9px;text-align:center;white-space:nowrap}
+.dgrid th{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);font-weight:500}
+.dgrid td small{display:block;color:var(--muted);font-size:.72rem}
+.dgrid td.none{color:var(--muted)}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{border:0;background:transparent;color:var(--muted);padding:8px 4px;border-radius:7px;font-size:.88rem;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs button[aria-selected="true"]{background:var(--surface-2);color:var(--fg)}
+
+/* Status */
+.status{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.65fr);gap:10px}
+.meter .label{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter .stage{color:var(--lamp);transition:color .6s}
+.pips{display:flex;align-items:center;gap:3px;margin-top:6px;flex-wrap:wrap}
+.pip{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--line);background:transparent;transition:background .3s,border-color .3s}
+.pip.w{background:var(--wound);border-color:var(--wound)}
+.pip.a{background:var(--lamp);border-color:var(--lamp)}
+.pip.h{background:var(--sab);border-color:var(--sab)}
+.pip.x{background:var(--exert);border-color:var(--exert)}
+.pip.f{border-color:var(--sab);opacity:.75}
+.pip.fx{border-color:var(--exert);opacity:.75}
+.pip.l{border-color:color-mix(in srgb, var(--wound) 70%, var(--line));background:repeating-linear-gradient(135deg,transparent 0 3px,color-mix(in srgb, var(--wound) 45%, transparent) 3px 4.5px)}
+.pipkey{display:flex;gap:10px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin-top:4px}
+.pipkey span{display:inline-flex;align-items:center;gap:4px}
+.pipkey .pip{width:9px;height:9px;margin:0}
+
+.round-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.round-line .rl{font-family:var(--f-display);font-size:1.35rem;line-height:1}
+.round-line .ph{font-size:.88rem;color:var(--muted);text-align:right}
+
+/* Track */
+.track-wrap{display:flex;flex-direction:column;gap:6px}
+.track{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cell{aspect-ratio:1/1.2;background:var(--surface);border:1px solid var(--line);border-radius:6px;position:relative;transition:background .3s,border-color .3s}
+.cell .n{position:absolute;bottom:3px;left:5px;font-family:var(--f-mono);font-size:.62rem;color:var(--muted)}
+.cell.danger{background:color-mix(in srgb, var(--wound) 20%, var(--surface));border-color:color-mix(in srgb, var(--wound) 55%, var(--line))}
+.token{position:absolute;top:0;height:100%;width:calc((100% - 24px) / 7);left:calc((100% - 24px) / 7 * var(--i) + 4px * var(--i));display:grid;place-items:center;transition:left .4s cubic-bezier(.3,.7,.3,1);pointer-events:none}
+.token svg{width:62%;height:auto;max-height:80%;overflow:visible}
+.token.flip svg{scale:-1 1}
+.token .facing{position:absolute;bottom:0;left:0;right:0;text-align:center;font-family:var(--f-mono);font-size:.95rem;line-height:1;color:var(--fg);font-weight:500}
+.token.hit svg{animation:hit .45s ease}
+@keyframes hit{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+.track-legend{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;color:var(--muted)}
+.track-legend b{color:var(--fg);font-weight:500}
+.zone-key{display:inline-flex;align-items:center;gap:6px}
+.zone-key::before{content:"";width:10px;height:10px;border-radius:2px;background:color-mix(in srgb, var(--wound) 45%, var(--surface))}
+
+/* Board: his card beside your beats */
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:10px;align-items:stretch}
+.ecol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ecard{border-radius:12px;border:1px solid var(--line);min-height:196px;padding:12px;position:relative;overflow:hidden;flex:1}
+.ecard.back{background:repeating-linear-gradient(135deg,var(--back-a) 0 9px,var(--back-b) 9px 18px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.ecard.back::after{content:"";position:absolute;inset:7px;border:1px solid var(--line);border-radius:8px;pointer-events:none}
+.ecard.back.nm{background:repeating-linear-gradient(135deg,color-mix(in srgb, var(--nm) 18%, var(--back-a)) 0 9px,var(--back-b) 9px 18px);border-color:var(--nm)}
+.ecard.back.nm::after{border-color:color-mix(in srgb, var(--nm) 55%, var(--line))}
+.tell-sym{font-size:3.6rem;line-height:1;color:var(--lamp-0)}
+.ecard.back.nm .tell-sym{color:var(--nm)}
+.tell-name{font-family:var(--f-display);font-size:1.45rem;line-height:1}
+.tell-sub{font-size:.8rem;color:var(--muted);max-width:14ch}
+.nm-tag{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--nm)}
+.range-hint{font-family:var(--f-mono);font-size:.72rem;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 6px;margin-top:4px;position:relative;z-index:1}
+.ecard.front{background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.ecard.front.nm{border-color:var(--nm);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--nm) 40%, transparent)}
+.ehead{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.ename{font-family:var(--f-display);font-size:1.25rem;line-height:1.02}
+.ecard.front.nm .ename{color:var(--nm)}
+.etell{font-size:1rem;color:var(--lamp-0);line-height:1}
+.ecard.front.nm .etell{color:var(--nm)}
+.etag{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sab)}
+.etag .nmw{color:var(--nm)}
+.ebeat{display:flex;flex-direction:column;gap:2px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg)}
+.ebeat .bh{display:flex;justify-content:space-between;gap:6px;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ebeat .bt{font-size:.86rem;line-height:1.28}
+.ebeat.active{border-color:var(--lamp);box-shadow:inset 0 0 0 1px var(--lamp)}
+.ebeat.done{opacity:.55}
+.ebeat.cancelled .bt{text-decoration:line-through;color:var(--muted)}
+.deckinfo{font-family:var(--f-mono);font-size:.68rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;font-variant-numeric:tabular-nums}
+.deckinfo .nmc{color:var(--nm)}
+
+.slots{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot{border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;min-height:94px;display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.slot .sh{display:flex;justify-content:space-between;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.slot .sn{font-family:var(--f-display);font-size:1.15rem;line-height:1}
+.slot .sn.ex{color:var(--exert)}
+.slot .empty{font-size:.86rem;color:var(--muted)}
+.slot.filled{border-style:solid;background:var(--surface)}
+.slot.active{border-color:var(--sab);box-shadow:inset 0 0 0 1px var(--sab)}
+.slot.done{opacity:.6}
+.slot.skip{border-color:color-mix(in srgb, var(--ok) 55%, var(--line))}
+.slot .sn.rec{color:var(--ok)}
+.skipline{font-size:.8rem;color:var(--muted);line-height:1.28}
+.chip.breathchip[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--bg)}
+.warnline{font-size:.78rem;color:var(--wound);line-height:1.25}
+.xbtn{border:1px solid var(--line);background:transparent;border-radius:6px;width:26px;height:22px;line-height:1;cursor:pointer;color:var(--muted)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-size:.78rem;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:transparent;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--sab);color:var(--bg);border-color:var(--sab)}
+.chip.static{cursor:default}
+.notice{font-size:.84rem;color:var(--sab)}
+.notice.warn{color:var(--wound)}
+
+.primary{width:100%;border:0;border-radius:12px;background:var(--lamp);color:var(--on-lamp);font-family:var(--f-display);font-size:1.3rem;font-weight:600;padding:12px 16px;cursor:pointer;transition:background .6s,opacity .2s}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.secondary{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:500}
+
+/* Hand */
+.hand-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hand-head h2,.sec-h{font-family:var(--f-display);font-weight:600;font-size:1.3rem;margin:0;line-height:1.1}
+.hand-head span{font-size:.84rem;color:var(--muted)}
+.hand{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:560px){.hand{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.hcard{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:100px;min-width:0}
+.hcard .top-l{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.hcard .hn{font-family:var(--f-display);font-size:1.15rem;line-height:1}
+.hcard .ht{font-size:.82rem;color:var(--muted);line-height:1.28}
+.hcard[aria-pressed="true"]{border-color:var(--sab);box-shadow:inset 0 0 0 1px var(--sab)}
+.hcard:disabled{opacity:.4;cursor:not-allowed}
+.hcard .tag{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sab)}
+.hcard .tag.rec{color:var(--ok)}
+.hcard.exert{border-color:color-mix(in srgb, var(--exert) 55%, var(--line))}
+.hcard.exert .hn{color:var(--exert)}
+.xb{font-family:var(--f-mono);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--exert);border:1px solid var(--exert);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:2px}
+.speed{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.sp1{color:var(--sab)} .sp2{color:var(--fg)} .sp3{color:var(--muted)}
+.pile{display:flex;flex-direction:column;gap:6px}
+.pile h3{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:500}
+.minis{display:flex;flex-wrap:wrap;gap:6px}
+.mini{font-size:.84rem;padding:4px 9px;border-radius:7px;border:1px dashed var(--line);color:var(--muted)}
+.mini.x{color:var(--exert);border-color:color-mix(in srgb, var(--exert) 50%, var(--line))}
+.mini.lost{text-decoration:line-through;border-style:solid;border-color:color-mix(in srgb, var(--wound) 50%, var(--line));color:var(--wound)}
+.pile .none{font-size:.84rem;color:var(--muted)}
+
+/* Choice step */
+.choice{border:1px solid var(--wound);border-radius:14px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.choice.turn{border-color:var(--exert)}
+.choice.recover{border-color:var(--ok)}
+.choice h2{font-family:var(--f-display);font-weight:600;font-size:1.45rem;margin:0;line-height:1.05}
+.choice.lose h2{color:var(--wound)}
+.choice.turn h2{color:var(--exert)}
+.choice.recover h2{color:var(--ok)}
+.choice p{margin:0;font-size:.9rem;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}
+.opt b{font-family:var(--f-display);font-weight:600;font-size:1.08rem;line-height:1.05}
+.opt .ot{font-size:.8rem;color:var(--muted);line-height:1.28}
+.opt .on{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.opt .arrow{color:var(--exert)}
+.choice.turn .opt:hover{border-color:var(--exert)}
+.choice.lose .opt:hover{border-color:var(--wound)}
+.choice.recover .opt:hover{border-color:var(--ok)}
+
+/* Feed and log */
+.feed{display:flex;flex-direction:column;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.line{font-size:.93rem;line-height:1.35}
+.line.beat{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.line.beat:first-child{margin-top:0}
+.line.sys{color:var(--muted)}
+.line.hit{color:var(--ok)}
+.line.hurt{color:var(--wound)}
+.line.you{color:var(--fg)}
+.line.rec{color:var(--ok)}
+.line.bp{font-family:var(--f-display);font-size:1.12rem;color:var(--nm);border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+.line.ex{color:var(--exert)}
+.line.end{font-family:var(--f-display);font-size:1.2rem}
+details.log summary{cursor:pointer;font-size:.9rem;color:var(--muted);padding:4px 0}
+details.log .feed{max-height:360px;overflow:auto;margin-top:6px}
+.rhead{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg);border-top:1px solid var(--line);padding-top:8px;margin-top:6px}
+.rhead:first-child{border-top:0;padding-top:0;margin-top:0}
+
+.result{border:1px solid var(--lamp);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+.result h2{font-family:var(--f-display);font-size:1.8rem;line-height:1;margin:0;color:var(--lamp);text-wrap:balance}
+.result p{margin:0}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kv div{display:flex;flex-direction:column;gap:2px}
+.kv .k{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kv .v{font-family:var(--f-display);font-size:1.5rem;line-height:1;font-variant-numeric:tabular-nums}
+.save-note{font-size:.84rem;color:var(--muted)}
+
+/* Other tabs */
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h3{font-family:var(--f-display);font-weight:600;font-size:1.15rem;margin:8px 0 0;line-height:1.1}
+.group h3 small{font-family:var(--f-body);font-weight:400;font-size:.84rem;color:var(--muted);margin-left:6px}
+.crow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.crow.nm{border-color:color-mix(in srgb, var(--nm) 55%, var(--line))}
+.crow .ct{font-size:1.3rem;color:var(--lamp-0);line-height:1;grid-row:span 3;padding-top:2px}
+.crow.nm .ct{color:var(--nm)}
+.crow .cn{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.crow .cn b{font-family:var(--f-display);font-weight:600;font-size:1.08rem}
+.crow .side{font-size:.84rem;color:var(--muted);line-height:1.35}
+.crow .side .sl{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;margin-right:4px}
+.crow .side.on{color:var(--fg)}
+.crow .side.on.n .sl{color:var(--nm)}
+.crow .side.on.w .sl{color:var(--lamp-0)}
+.crow.gone{opacity:.55}
+.st{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px;border:1px solid var(--line);white-space:nowrap;color:var(--muted)}
+.st.deck{color:var(--fg)}
+.st.play{color:var(--on-lamp);background:var(--lamp);border-color:var(--lamp)}
+.st.nmst{color:var(--nm);border-color:var(--nm)}
+.scard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.scard > div{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--surface);display:flex;flex-direction:column;gap:3px;min-width:0}
+.scard > div.x{border-color:color-mix(in srgb, var(--exert) 45%, var(--line))}
+.scard > div.on{box-shadow:inset 0 0 0 1px var(--sab)}
+.scard > div.x.on{box-shadow:inset 0 0 0 1px var(--exert)}
+.scard b{font-family:var(--f-display);font-weight:600;font-size:1.05rem;line-height:1.05}
+.scard .x b{color:var(--exert)}
+.scard span{font-size:.82rem;color:var(--muted);line-height:1.3}
+.scard .zone{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:440px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:4px}
+.tile .k{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:var(--f-display);font-size:1.7rem;line-height:1;font-variant-numeric:tabular-nums}
+.tile .s{font-size:.78rem;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:grid;grid-template-columns:minmax(84px,auto) minmax(0,1fr) 4.2em;gap:10px;align-items:center;font-size:.88rem}
+.bar .track-b{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden;position:relative;display:flex}
+.bar .fill{height:100%;background:var(--sab)}
+.bar .fill.x{background:var(--exert)}
+.bar .fill.bad{background:var(--wound)}
+.bar .num{text-align:right;font-family:var(--f-mono);font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.bar.flag .name{color:var(--lamp)}
+.legend{display:flex;gap:14px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tellgrid{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.88rem}
+.tellgrid > div{padding:8px 10px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tellgrid > .h{border-top:0;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface)}
+.tellgrid .tn{color:var(--lamp-0)}
+.tellgrid .tn.nmr{color:var(--nm)}
+.fights{display:flex;flex-direction:column;gap:6px}
+.fight{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:.88rem}
+.res{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.res.win{background:var(--ok);color:var(--bg)}
+.res.loss{background:var(--wound);color:var(--bg)}
+.fight .meta{color:var(--muted);font-size:.8rem}
+.fight .rn{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);text-align:right;white-space:nowrap}
+.empty-state{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--muted)}
+
+.levers{display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface)}
+.lever{display:flex;flex-direction:column;gap:6px}
+.lever .lt{font-weight:500}
+.lever .ld{font-size:.82rem;color:var(--muted)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;font-size:.86rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--sab);color:var(--bg);border-color:var(--sab)}
+.prose{display:flex;flex-direction:column;gap:8px;max-width:62ch}
+.prose p,.prose li{font-size:.95rem}
+.prose ol,.prose ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.prose p{margin:0}
+.prose h3{font-family:var(--f-display);font-weight:600;font-size:1.1rem;margin:6px 0 0;line-height:1.1}
+a{color:var(--sab)}
+.rules h3{margin-top:14px}
+.rules .lead{font-size:1rem;color:var(--fg)}
+.nmtxt{color:var(--nm);font-weight:500}
+.mt{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-family:var(--f-mono);font-size:.66rem;text-align:center;max-width:420px}
+.mt span{border:1px solid var(--line);border-radius:5px;padding:6px 0;color:var(--muted);background:var(--surface);white-space:nowrap;overflow:hidden}
+.mt .me{color:var(--sab);border-color:var(--sab);font-weight:500}
+.mt .him{color:var(--lamp-0);border-color:var(--lamp-0);font-weight:500}
+.mt .miss{color:var(--wound);border-style:dashed;text-decoration:line-through}
+details.notes{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+details.notes summary{cursor:pointer;color:var(--muted);font-size:.92rem}
+.welcome{display:flex;flex-direction:column;gap:8px;border:1px solid var(--sab);border-radius:12px;padding:12px 14px;background:var(--surface);font-size:.95rem}
+.welcome-btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.linkbtn{border:0;background:transparent;color:var(--muted);text-decoration:underline;cursor:pointer;padding:4px}
+.logout{width:100%;font-family:var(--f-mono);font-size:.72rem;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px}
+.group.share{border-top:1px solid var(--line);padding-top:12px}
+.who{display:flex;flex-direction:column;gap:4px;max-width:360px}
+.who label{font-size:.84rem;color:var(--muted)}
+.who input{font:inherit;font-size:1rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+.seg.scope{align-items:center}
+.dgrid.players th:first-child{text-align:left;font-family:var(--f-body);font-size:.88rem;text-transform:none;letter-spacing:0;color:var(--fg)}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="title-row">
+      <div>
+        <div class="eyebrow">Playtest kit · v6</div>
+        <h1>Ceryllian <em>Duel</em></h1>
+      </div>
+      <div class="matchup">Sabbialt vs the Lamplighter · <button type="button" class="dials" id="dials" data-tab="tests">Level 1 · Insight 0</button></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tab-btn-duel" data-tab="duel" aria-selected="true">Duel</button>
+      <button role="tab" id="tab-btn-deck" data-tab="deck" aria-selected="false">Cards</button>
+      <button role="tab" id="tab-btn-tests" data-tab="tests" aria-selected="false">Playtests</button>
+      <button role="tab" id="tab-btn-rules" data-tab="rules" aria-selected="false">Rules</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="panel-duel" class="app" role="tabpanel" aria-labelledby="tab-btn-duel">
+      <div class="welcome" id="welcome" hidden>
+        <div><b>First time here?</b> The Rules tab explains the duel in about three minutes.</div>
+        <div class="welcome-btns"><button type="button" class="secondary" id="welcomeRules">Read the rules</button><button type="button" class="linkbtn" id="welcomeSkip">Just play</button></div>
+      </div>
+      <div class="status">
+        <div class="meter"><div class="label">Sabbialt · <span id="sabCount">9 in hand</span></div><div class="pips" id="sabPips"></div></div>
+        <div class="meter"><div class="label">Lamplighter · <span class="stage" id="stageName">Watchman</span></div><div class="pips" id="lampPips"></div></div>
+        <div class="meter"><div class="label">Alarm</div><div class="pips" id="alarmPips"></div></div>
+      </div>
+      <div class="pipkey"><span><i class="pip h"></i>In hand</span><span><i class="pip x"></i>Exert</span><span><i class="pip f"></i>Fatigued</span><span><i class="pip l"></i>Lost</span></div>
+
+      <div class="round-line"><span class="rl" id="roundLabel">Round 1</span><span class="ph" id="phaseLabel"></span></div>
+
+      <div class="track-wrap">
+        <div class="track" id="track" aria-label="The street, 7 spaces"></div>
+        <div class="track-legend"><span id="distLabel"></span><span id="zoneLabel"></span></div>
+      </div>
+
+      <div class="board">
+        <div class="ecol">
+          <div class="ecard back" id="ecard" aria-live="polite"></div>
+          <div class="deckinfo" id="deckinfo"></div>
+        </div>
+        <div class="slots" id="slots"></div>
+      </div>
+
+      <div id="notice" class="notice" hidden></div>
+      <button class="primary" id="actBtn" type="button">Commit beats</button>
+
+      <div id="choiceWrap" hidden></div>
+
+      <div id="handWrap" class="app" style="gap:8px">
+        <div class="hand-head"><h2>Your hand</h2><span id="handNote"></span></div>
+        <div class="hand" id="hand"></div>
+      </div>
+      <div id="feedWrap" hidden>
+        <div class="feed" id="feed" aria-live="polite"></div>
+      </div>
+      <div class="pile" id="pileWrap"></div>
+      <div id="resultWrap" hidden></div>
+
+      <details class="log" id="logDetails">
+        <summary>Fight log</summary>
+        <div class="feed" id="log"></div>
+      </details>
+    </section>
+
+    <section id="panel-deck" class="app" role="tabpanel" aria-labelledby="tab-btn-deck" hidden>
+      <h2 class="sec-h">Sabbialt's cards</h2>
+      <p class="lead">Each card has a Steady side and an Exert side. A card turns to Exert when you lose another card, and stays turned.</p>
+      <div id="sabList" class="app" style="gap:6px"></div>
+      <h2 class="sec-h" style="margin-top:8px">The Lamplighter's deck</h2>
+      <p class="lead" id="deckLead"></p>
+      <div id="deckList" class="app" style="gap:6px"></div>
+    </section>
+
+    <section id="panel-tests" class="app" role="tabpanel" aria-labelledby="tab-btn-tests" hidden>
+      <h2 class="sec-h">Playtests</h2>
+      <p class="lead" id="storeNote">Finished fights are logged here automatically.</p>
+      <div class="who">
+        <label for="playerName">Your name in the log</label>
+        <input id="playerName" type="text" maxlength="30" autocomplete="nickname" placeholder="So your fights are easy to spot">
+      </div>
+      <div class="seg scope" id="scopeRow" hidden>
+        <button type="button" data-scope="all" aria-pressed="true">Everyone</button>
+        <button type="button" data-scope="me" aria-pressed="false">Just me</button>
+        <button type="button" class="linkbtn" id="refreshShared" hidden>Refresh</button>
+      </div>
+      <div id="testsBody" class="app" style="gap:16px"></div>
+
+      <div class="group share">
+        <h3>Send your fights</h3>
+        <p class="lead">Copies every logged fight as text you can paste into a message to the designer.</p>
+        <button class="secondary" id="copyLog" type="button">Copy my fight log</button>
+        <p class="lead" id="copyNote" hidden></p>
+        <textarea id="logOut" class="logout" rows="5" readonly hidden aria-label="Your fight log"></textarea>
+      </div>
+
+      <h2 class="sec-h" style="margin-top:8px">Settings</h2>
+      <p class="lead">Level and World Insight set how hard he is. The rest are rules still being tested. Changes apply from your next fight, and each logged fight records the settings it used.</p>
+      <div class="levers" id="levers"></div>
+      <button class="secondary" id="newWithLevers" type="button">Start a new fight with these settings</button>
+    </section>
+
+    <section id="panel-rules" class="app" role="tabpanel" aria-labelledby="tab-btn-rules" hidden>
+      <div class="prose rules">
+        <h2 class="sec-h">How to play</h2>
+        <p class="lead">You are Sabbialt, an infiltrator slipping into the island city of Ceryllian. Between you and the next district stands the Lamplighter, a watchman with a hooked lantern-pole. Wound him <span id="lampHPRule">4</span> times to win. Run out of cards in your hand and he finishes you.</p>
+
+        <h3>The street</h3>
+        <div class="mt" aria-label="Starting positions: Sabbialt on space 2, the Lamplighter on space 5">
+          <span>1</span><span class="me">You ›</span><span>3</span><span>4</span><span class="him">‹ Him</span><span>6</span><span>7</span>
+        </div>
+        <ul>
+          <li>The street is 7 spaces. You start on space 2, he starts on space 5.</li>
+          <li><b>Distance</b> is how many spaces apart you are. Side by side is distance 1.</li>
+          <li>Your blades reach distance 1. His hook is deadliest at distance 2, so the fight is about getting inside his reach without being punished on the way in.</li>
+          <li>You can't share a space or pass each other, except with Slip Past or Blur.</li>
+        </ul>
+
+        <h3>Reading him</h3>
+        <ul>
+          <li>His deck sits face-down. The back of the top card shows his intent: <b>▲ Press</b>, <b>■ Hold</b> or <b>▼ Withdraw</b>. That is all you know when you plan.</li>
+          <li>Each card of his does two things, one per beat. Press cards tend to come at you, Hold cards keep their distance and wait, Withdraw cards back off.</li>
+          <li>A tell drawn in <span class="nmtxt">red</span> means that card has turned to its Nightmare side, usually faster and nastier.</li>
+          <li>Under his card, "Left" counts how many of each tell are still in his deck. The Cards tab lists everything he can do.</li>
+        </ul>
+
+        <h3>A round</h3>
+        <ol>
+          <li>Look at his tell.</li>
+          <li>Put a card from your hand into <b>Beat 1</b> and <b>Beat 2</b>. Each card is either played, or spent to catch your breath (see Stamina).</li>
+          <li>Commit. His card flips face up.</li>
+          <li>Resolve Beat 1, then Beat 2. In each beat the faster action goes first: <b>Swift</b>, then <b>Normal</b>, then <b>Slow</b>. If you're the same speed, <b>he goes first</b>.</li>
+          <li>A strike that wounds cancels the other side's action that beat, if it hasn't happened yet. A Swift cut stops a Slow swing.</li>
+        </ol>
+        <p>The red spaces on the street show where his next strike would land from where he stands now.</p>
+
+        <h3>Range and facing</h3>
+        <ul>
+          <li>"Strike 1" hits only at distance 1. "Strike 2" hits only at exactly distance 2. "Strike 1–2" hits at either.</li>
+          <li>At the start of each round you both turn to face each other. Moving doesn't turn anyone unless the card says so.</li>
+          <li>Strikes only hit in front, unless the card says "on either side".</li>
+        </ul>
+        <p>That makes <b>Slip Past</b> special. Step past him at distance 1 and you turn to face his back, but he doesn't turn. His strikes miss you for the rest of the round, and yours can still land.</p>
+        <div class="mt" aria-label="Before Slip Past: you on 3 facing right, him on 4 facing left">
+          <span>1</span><span>2</span><span class="me">You ›</span><span class="him">‹ Him</span><span>5</span><span>6</span><span>7</span>
+        </div>
+        <div class="mt" aria-label="After Slip Past: him on 4 still facing left, you on 5 facing him">
+          <span>1</span><span>2</span><span class="miss" title="his strike lands here">miss</span><span class="him">‹ Him</span><span class="me">‹ You</span><span>6</span><span>7</span>
+        </div>
+
+        <h3>Stamina: your hand is your life</h3>
+        <ul>
+          <li>You start with 9 cards in hand. Every card you play goes to your <b>fatigue pile</b>, and you never reshuffle.</li>
+          <li><b>Catch your breath.</b> Instead of playing a card, you can spend it. If he doesn't hit you in that beat, take a different card back from your fatigue pile. Every beat needs a card while you still have one.</li>
+          <li><b>Breathe</b> takes 2 cards back, then returns to your hand itself. A successful <b>Parry</b> or <b>Riposte</b> takes 1 back.</li>
+          <li>If your hand is empty at the end of a round, he finishes you.</li>
+        </ul>
+
+        <h3>Getting hurt</h3>
+        <ul>
+          <li>When his strike hits you, the card in that beat is <b>lost</b> for good, whether you played it or spent it.</li>
+          <li><b>Desperation.</b> Each time you lose a card, turn one of your other cards to its stronger <b>Exert</b> side. It stays turned. If it was in your fatigue pile, it comes back to your hand.</li>
+        </ul>
+
+        <h3>Hurting him</h3>
+        <ul>
+          <li>Each wound you deal turns a card in his deck to its Nightmare side at the end of the round. You'll see the red tell when it reaches the top.</li>
+          <li>Heavy Cut and Sundering Cut deal 2 wounds. Everything else deals 1.</li>
+        </ul>
+
+        <h3>Two more things</h3>
+        <ul>
+          <li><b>Study</b> takes your whole round: your other beat stays empty, and you see his next card before you plan the next round.</li>
+          <li><b>Alarm.</b> Some of his Withdraw cards signal the watch if you aren't right next to him. Three alarms and you lose.</li>
+        </ul>
+
+        <h3>Tips</h3>
+        <ul>
+          <li>Catch your breath when his tell says he's backing off.</li>
+          <li>Adjacent to him on a ▲ Press? Slip Past, then Quick Cut.</li>
+          <li>Losing a card hurts, but Desperation makes your next cards hit harder. Choose which card to turn with the next few rounds in mind.</li>
+        </ul>
+
+        <details class="notes">
+          <summary>Designer notes</summary>
+          <h3>How this app rules the gaps</h3>
+          <ul>
+            <li>Parry, Riposte and Ghost Step cover their whole beat, even when he goes first in a tie.</li>
+            <li>A card that moves and strikes does both parts, in order.</li>
+            <li>Your Beat 1 card is already in your fatigue pile when Beat 2 resolves, so a card taken back in Beat 2 can be it.</li>
+            <li>A card turned to Exert before it's played resolves on its Exert side.</li>
+            <li>When there's only one possible pick, the app makes it for you.</li>
+          </ul>
+          <h3>On the table</h3>
+          <ul>
+            <li>Your cards are printed on both sides: flip one over to exert it. Keep your fatigue pile face up.</li>
+            <li>His cards can't be double-sided, because the back carries the tell. The Watchman half and the Nightmare half share one face, upside down to each other, with the tell at both ends of the back. Turning a card means rotating it 180°.</li>
+          </ul>
+          <p>Full design notes: <a href="https://claude.ai/code/artifact/e17a82be-d72a-4669-8b2e-a9b948016b24" target="_blank" rel="noopener">Ceryllian Duel Prototype doc</a> (only opens for people it's shared with).</p>
+        </details>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/*ENGINE-START*/
+var TRACK = 7;
+var SPEED_NAME = {1:'Swift', 2:'Normal', 3:'Slow'};
+var TELLS = {press:{sym:'▲', name:'Press'}, hold:{sym:'■', name:'Hold'}, withdraw:{sym:'▼', name:'Withdraw'}};
+var STAGES = ['Watchman', 'Guttering', 'Nightmare'];
+var DEFAULT_SETTINGS = {level:1, insight:0, facing:true, ties:'him', study:'watch', desperation:true, parryRecovers:true, breathe:2, breatheKeeps:true, lampTurn:'top', hookPull:true, rangeOnBack:false};
+// The Lamplighter's two dials: Level sets his wounds; world Insight turns cards to Nightmare before the fight.
+var LEVEL_WOUNDS = {1:4, 2:5, 3:6};
+function levelOf(st){ return st.level || Math.max(1, (st.lampHP || 4) - 3); }
+
+var MOVE1 = [{dir:'toward',n:1,label:'Toward'},{dir:'away',n:1,label:'Away'}];
+var MOVE2 = [{dir:'toward',n:1,label:'Toward 1'},{dir:'toward',n:2,label:'Toward 2'},{dir:'away',n:1,label:'Away 1'},{dir:'away',n:2,label:'Away 2'}];
+var CUT1 = {min:1,max:1,dmg:1};
+
+// Each of Sabbialt's cards: s = Steady side, x = Exert side.
+var SAB = {
+  step:{ s:{name:'Step', speed:1, text:'Move 1 space either way.', opts:MOVE1},
+         x:{name:'Ghost Step', speed:1, text:"Move 1 space either way. His strike can't hit you this beat.", opts:MOVE1, dodge:true} },
+  dash:{ s:{name:'Dash', speed:2, text:'Move up to 2 spaces either way.', opts:MOVE2},
+         x:{name:'Blur', speed:1, text:'Move up to 2 spaces either way. You can pass through his space, and neither of you turns.', opts:MOVE2, pass:true} },
+  quick:{ s:{name:'Quick Cut', speed:1, text:'Strike 1.', strike:CUT1},
+          x:{name:'Flicker Cut', speed:1, text:'Strike 1–2.', strike:{min:1,max:2,dmg:1}} },
+  heavy:{ s:{name:'Heavy Cut', speed:3, text:'Strike 1 for 2 wounds.', strike:{min:1,max:1,dmg:2}},
+          x:{name:'Sundering Cut', speed:2, text:'Strike 1 for 2 wounds.', strike:{min:1,max:1,dmg:2}} },
+  lunge:{ s:{name:'Lunge', speed:2, text:'Move 1 toward him, then Strike 1.', move:1, strike:CUT1},
+          x:{name:'Long Lunge', speed:2, text:'Move up to 2 toward him, then Strike 1.', move:2, strike:CUT1} },
+  parry:{ s:{name:'Parry', speed:1, text:'Ignore the first strike that would hit you this beat. If you do, cancel his next beat.', parry:'cancel'},
+          x:{name:'Riposte', speed:1, text:'Ignore the first strike that would hit you this beat. If you do, he takes a wound.', parry:'wound'} },
+  slip:{ s:{name:'Slip Past', speed:2, text:'At distance 1, move to the space on his far side and turn to face him. He doesn’t turn, so his strikes miss you until the round ends.', slip:true, turn:true},
+         x:{name:'Slip and Cut', speed:2, text:'At distance 1, move to his far side, turn to face him, then Strike 1.', slip:true, turn:true, strike:CUT1} },
+  study:{ s:{name:'Study', speed:1, text:'Look at the front of his next card.', peek:1},
+          x:{name:'Deep Study', speed:1, text:'Look at the fronts of his next two cards.', peek:2} },
+  breathe:{ s:{name:'Breathe', speed:3, text:'Take 2 cards from your fatigue pile back into your hand.', recover:2},
+            x:{name:'Second Wind', speed:2, text:'Take 3 cards from your fatigue pile back into your hand.', recover:3} }
+};
+var SAB_ORDER = ['step','dash','quick','heavy','lunge','parry','slip','study','breathe'];
+
+// Each of his cards: w = Watchman side, n = Nightmare side. The tell is shared.
+var LAMP = {
+  1:{tell:'press',
+     w:{name:'Hook and Drag', beats:[{sp:2,a:'strike',min:2,max:2,hook:true,t:'Strike 2. On a hit, pull Sabbialt 1 toward him.'},{sp:2,a:'strike',min:1,max:1,t:'Strike 1.'}]},
+     n:{name:'Gaff Hook', beats:[{sp:1,a:'strike',min:2,max:2,hook:true,t:'Strike 2. On a hit, pull Sabbialt 1 toward him.'},{sp:2,a:'strike',min:1,max:1,t:'Strike 1.'}]}},
+  2:{tell:'press',
+     w:{name:'Advancing Sweep', beats:[{sp:1,a:'adv',n:1,t:'Advance 1.'},{sp:3,a:'strike',min:1,max:2,omni:true,t:'Strike 1–2 on either side.'}]},
+     n:{name:'Burning Sweep', beats:[{sp:1,a:'adv',n:1,t:'Advance 1.'},{sp:2,a:'strike',min:1,max:2,omni:true,t:'Strike 1–2 on either side.'}]}},
+  3:{tell:'press',
+     w:{name:'Lantern Thrust', beats:[{sp:2,a:'advStrike',n:1,min:2,max:2,t:'Advance 1, then Strike 2.'},{sp:1,a:'adv',n:1,t:'Advance 1.'}]},
+     n:{name:'Gutterflame Lash', beats:[{sp:1,a:'strike',min:1,max:2,t:'Strike 1–2.'},{sp:1,a:'adv',n:1,t:'Advance 1.'}]}},
+  4:{tell:'press',
+     w:{name:'Rush', beats:[{sp:1,a:'adv',n:2,t:'Advance 2.'},{sp:2,a:'strike',min:1,max:1,t:'Strike 1.'}]},
+     n:{name:'Chain of Lanterns', beats:[{sp:3,a:'strike',min:1,max:3,omni:true,t:'Strike 1–3 on either side.'},{sp:2,a:'pull',n:2,t:'Pull Sabbialt 2 toward him.'}]}},
+  5:{tell:'hold',
+     w:{name:'Patient Guard', beats:[{sp:1,a:'guard',t:'Guard. Ignore the next strike against him this round.'},{sp:2,a:'strike',min:2,max:2,t:'Strike 2.'}]},
+     n:{name:'Unblinking', beats:[{sp:1,a:'unblink',t:"Reveal Sabbialt's Beat 2 card. If it's a strike, he ignores it."},{sp:2,a:'strike',min:2,max:2,t:'Strike 2.'}]}},
+  6:{tell:'hold',
+     w:{name:'Measured Distance', beats:[{sp:2,a:'toDist',d:2,t:'Advance or withdraw to distance 2.'},{sp:2,a:'strike',min:2,max:2,t:'Strike 2.'}]},
+     n:{name:'The Long Watch', beats:[{sp:2,a:'toDist',d:2,t:'Advance or withdraw to distance 2.'},{sp:1,a:'strike',min:2,max:2,t:'Strike 2.'}]}},
+  7:{tell:'hold',
+     w:{name:'Lantern Raise', beats:[{sp:3,a:'strike',min:1,max:2,t:'Strike 1–2.'},{sp:3,a:'strike',min:1,max:2,t:'Strike 1–2.'}]},
+     n:{name:'Smoke', beats:[{sp:2,a:'smoke',t:'Withdraw 1. Next round his card comes from the bottom of his deck: no tell.'},{sp:2,a:'strike',min:2,max:2,t:'Strike 2.'}]}},
+  8:{tell:'withdraw',
+     w:{name:'Step Back', beats:[{sp:1,a:'wd',n:1,t:'Withdraw 1.'},{sp:2,a:'strike',min:2,max:2,t:'Strike 2.'}]},
+     n:{name:'Recoil', beats:[{sp:1,a:'wd',n:1,t:'Withdraw 1.'},{sp:1,a:'strike',min:2,max:2,t:'Strike 2.'}]}},
+  9:{tell:'withdraw',
+     w:{name:'Shove', beats:[{sp:1,a:'shove',n:1,t:'If Sabbialt is at distance 1, push him 1 away (no wound).'},{sp:3,a:'strike',min:2,max:2,t:'Strike 2.'}]},
+     n:{name:'Kick the Lamp', beats:[{sp:1,a:'shove',n:2,t:'If Sabbialt is at distance 1, push him 2 away.'},{sp:2,a:'strike',min:2,max:3,t:'Strike 2–3.'}]}},
+  10:{tell:'withdraw',
+     w:{name:'Retreat and Signal', beats:[{sp:2,a:'wd',n:2,t:'Withdraw 2.'},{sp:3,a:'signal',t:"Signal. If Sabbialt isn't at distance 1, add an Alarm token."}]},
+     n:{name:'The Bell', beats:[{sp:1,a:'wd',n:2,t:'Withdraw 2.'},{sp:2,a:'signal',t:"Signal. If Sabbialt isn't at distance 1, add an Alarm token."}]}}
+};
+var LAMP_IDS = [1,2,3,4,5,6,7,8,9,10];
+
+var rand = Math.random;
+var lastPassed = false;
+function setRandom(fn){ rand = fn; }
+function shuffle(arr){
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(rand() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function log(S, k, t){ S.log.push({r:S.round, k:k, t:t}); }
+function dist(S){ return Math.abs(S.sab.pos - S.lamp.pos); }
+function dirTo(from, to){ return to > from ? 1 : (to < from ? -1 : 0); }
+function zone(S, z){ return SAB_ORDER.filter(function(id){ return S.hand[id].where === z; }); }
+function owned(S){ return SAB_ORDER.filter(function(id){ return S.hand[id].where !== 'lost'; }); }
+// Study variants (settings.study): 'watch' = Study takes your whole round (default), 'watchnm' = that plus
+// the card you look at turns to Nightmare, 'full' = the original one-beat Study, 'slow'/'both' = test-only.
+var GLANCE = {name:'Glance', speed:1, text:'Look at the front of his next card.', peek:1};
+var STUDY_WATCH = {name:'Study', speed:1, text:'Takes your whole round, so your other beat stays empty. Look at the front of his next card.', peek:1, watch:true};
+function studyWatches(S){ return S.settings.study === 'watch' || S.settings.study === 'watchnm'; }
+function watchCard(S, id){ return id === 'study' && studyWatches(S) && S.hand.study.side === 's'; }
+function face(S, id){
+  var f = SAB[id][S.hand[id].side];
+  if (id === 'study' && studyWatches(S)) return S.hand.study.side === 's' ? STUDY_WATCH : GLANCE;
+  if (id === 'study' && (S.settings.study === 'slow' || S.settings.study === 'both')) return Object.assign({}, f, {speed: f.speed + 2});
+  return f;
+}
+function exertFace(S, id){ return (id === 'study' && studyWatches(S)) ? GLANCE : SAB[id].x; }
+function steadyFace(S, id){ return (id === 'study' && studyWatches(S)) ? STUDY_WATCH : SAB[id].s; }
+function recoverN(S, f){ return f.recover ? (f === SAB.breathe.s ? S.settings.breathe : f.recover + (S.settings.breathe - 2)) : 0; }
+function cardText(S, f){
+  if (f.recover) return 'Take ' + recoverN(S, f) + ' cards from your fatigue pile back into your hand.' + (S.settings.breatheKeeps ? ' Then this card goes back to your hand too.' : '');
+  return f.text + (f.parry && S.settings.parryRecovers ? ' Then take 1 card back from your fatigue pile.' : '');
+}
+function lampFace(S, id){ return S.turned[id] ? LAMP[id].n : LAMP[id].w; }
+function turnedCount(S){ return LAMP_IDS.filter(function(id){ return S.turned[id]; }).length; }
+function stageOf(S){ var t = turnedCount(S); return t === 0 ? 0 : (t < 3 ? 1 : 2); }
+function exertCount(S){ return owned(S).filter(function(id){ return S.hand[id].side === 'x'; }).length; }
+function turnable(S){ return owned(S).filter(function(id){ return S.hand[id].side === 's'; }); }
+function beatText(S, b){ return (b.hook && !S.settings.hookPull) ? 'Strike 2. (Hook pull switched off.)' : b.t; }
+function rangeStr(b){ if (b.min == null) return '–'; return b.min === b.max ? String(b.min) : b.min + '–' + b.max; }
+
+function createFight(settings){
+  var st = Object.assign({}, DEFAULT_SETTINGS, settings || {});
+  st.lampHP = LEVEL_WOUNDS[st.level] || 4;
+  var hand = {};
+  SAB_ORDER.forEach(function(id){ hand[id] = {side:'s', where:'hand'}; });
+  var S = {
+    v:6, settings:st, round:1, sab:{pos:2}, lamp:{pos:5, wounds:0}, hand:hand, lostOrder:[], alarms:0, turned:{},
+    deck:shuffle(LAMP_IDS), discard:[], current:null, roundCard:null, roundTell:null, roundNm:false,
+    upcomingIdx:null, upcoming:null, hidden:false, known:false, peek:[], studyNote:null,
+    plan:[null,null], phase:'plan', afterChoose:null, pending:[], beatDone:0, cancelledBeats:[],
+    smokeNext:false, cancelNext:false, guard:false, unblink:false, parry:null, parrySrc:null, dodge:false, beatWounds:0,
+    result:null, fallReason:null, log:[], rounds:[], cards:{}, exertPlays:{}, recovered:0, emptyBeats:0,
+    roundDealt:0, roundTaken:0, saved:false, started:new Date().toISOString()
+  };
+  log(S, 'sys', 'Sabbialt slips into the lamplit street. Ahead, the Lamplighter turns. Level ' + st.level + ': he falls at ' + st.lampHP + ' wounds.');
+  var n = Math.min(st.insight || 0, LAMP_IDS.length);
+  if (n > 0){
+    shuffle(LAMP_IDS).slice(0, n).forEach(function(id){ S.turned[id] = true; });
+    log(S, 'bp', 'World Insight ' + n + ': ' + (n === 1 ? 'one of his cards starts' : n + ' of his cards start') + ' on the Nightmare side.');
+  }
+  prepareRound(S);
+  return S;
+}
+
+function reshuffle(S){
+  S.deck = shuffle(S.deck.concat(S.discard)); S.discard = []; S.peek = [];
+  log(S, 'sys', 'His discard is shuffled back into his deck.');
+}
+
+function prepareRound(S){
+  if (S.deck.length === 0) reshuffle(S);
+  S.hidden = S.smokeNext;
+  S.upcomingIdx = S.smokeNext ? 0 : S.deck.length - 1;
+  S.upcoming = S.deck[S.upcomingIdx];
+  S.studyNote = null;
+  if (S.peek.length && S.peek[0] === S.upcoming){ S.known = true; S.peek.shift(); }
+  else {
+    S.known = false;
+    if (S.peek.length && !S.hidden){ S.studyNote = 'His deck shifted after you studied him, so that read is gone.'; S.peek = []; }
+  }
+  S.plan = [null, null];
+  S.phase = 'plan';
+  S.afterChoose = null;
+  S.pending = [];
+  S.beatDone = 0;
+  S.cancelledBeats = [];
+  S.roundDealt = 0; S.roundTaken = 0;
+  faceEachOther(S);
+}
+
+function placeCard(S, id){
+  if (S.phase !== 'plan' || !S.hand[id] || S.hand[id].where !== 'hand') return;
+  var at = S.plan.findIndex(function(p){ return p && p.id === id; });
+  if (at >= 0){ clearSlot(S, at); return; }
+  if (watchPlaced(S)) return;
+  var slot = !S.plan[0] ? 0 : (!S.plan[1] ? 1 : -1);
+  if (watchCard(S, id)){
+    if (slot < 0) slot = 1;
+    S.plan = [null, null];
+    S.plan[1 - slot] = {empty:true, watch:true};
+  }
+  if (slot < 0) return;
+  S.plan[slot] = {id:id, opt: face(S, id).opts ? 0 : null, breath:false};
+}
+function watchPlaced(S){ return S.plan.some(function(p){ return p && p.id && watchCard(S, p.id); }); }
+// Catching your breath: spend the card in a beat instead of playing it. If he doesn't hit you in
+// that beat, take a different card back from your fatigue pile; if he does, the spent card is lost.
+function setBreath(S, i, on){
+  var p = S.plan[i];
+  if (S.phase === 'plan' && p && p.id && !watchCard(S, p.id)) p.breath = !!on;
+}
+function cardsLeftToPlace(S){
+  var anyPlaced = S.plan.some(function(p){ return p && p.id; });
+  // Study needs the whole round, so once another card is placed it can't fill the other beat.
+  return zone(S, 'hand').filter(function(id){ return !S.plan.some(function(p){ return p && p.id === id; }) && !(anyPlaced && watchCard(S, id)); });
+}
+function clearSlot(S, i){
+  if (S.phase !== 'plan' || !S.plan[i]) return;
+  if (S.plan[i].watch) return;
+  if (S.plan[i].id && watchCard(S, S.plan[i].id)) S.plan = [null, null];
+  else S.plan[i] = null;
+}
+function setOpt(S, i, k){ if (S.phase === 'plan' && S.plan[i]) S.plan[i].opt = k; }
+function slotsNeeded(S){
+  var hand = zone(S, 'hand').filter(function(id){ return !watchCard(S, id); });
+  return Math.min(2, hand.length);
+}
+function filledSlots(S){ return (S.plan[0] ? 1 : 0) + (S.plan[1] ? 1 : 0); }
+function canCommit(S){
+  if (S.phase !== 'plan') return false;
+  if (S.plan[0] && S.plan[1]) return true;
+  return cardsLeftToPlace(S).length === 0;
+}
+
+function commit(S){
+  if (!canCommit(S)) return;
+  for (var i = 0; i < 2; i++) if (!S.plan[i]) S.plan[i] = {empty:true};
+  S.plan.forEach(function(p){ if (p.id) S.hand[p.id].where = 'play'; });
+  S.current = S.deck.splice(S.upcomingIdx, 1)[0];
+  var f = lampFace(S, S.current);
+  S.roundCard = f.name;
+  S.roundNm = !!S.turned[S.current];
+  S.roundTell = S.hidden ? 'hidden' : LAMP[S.current].tell;
+  S.smokeNext = false;
+  log(S, 'sys', 'He reveals ' + f.name + (S.roundNm ? ', its Nightmare side' : '') + '.');
+  S.phase = 'flipped';
+}
+
+function stepFig(S, who, dir, n, pass){
+  var me = S[who], other = who === 'sab' ? S.lamp : S.sab, moved = 0;
+  for (var i = 0; i < n; i++){
+    var nx = me.pos + dir;
+    if (nx === other.pos){
+      if (!pass) break;
+      nx += dir;
+      if (nx < 1 || nx > TRACK) break;
+      lastPassed = true;
+    } else if (nx < 1 || nx > TRACK) break;
+    me.pos = nx; moved++;
+  }
+  return moved;
+}
+function moveSab(S, dir, n, nm, pass){
+  var d = dirTo(S.sab.pos, S.lamp.pos); if (dir === 'away') d = -d;
+  lastPassed = false;
+  var moved = stepFig(S, 'sab', d, n, pass);
+  if (moved === 0){ log(S, 'you', nm + ': you can’t move ' + (dir === 'toward' ? 'any closer' : 'back any further') + '.'); return; }
+  if (lastPassed){ log(S, 'you', nm + ': you pass straight through his guard to space ' + S.sab.pos + '. Distance ' + dist(S) + '.'); return; }
+  var tail = '';
+  if (moved < n) tail = (dir === 'toward' && dist(S) === 1) ? ', right up against him' : ' before running out of room';
+  log(S, 'you', nm + ': you move ' + moved + ' ' + (dir === 'toward' ? 'toward him' : 'away') + tail + '. Distance ' + dist(S) + '.');
+}
+function moveLamp(S, kind, n){
+  var d = dirTo(S.lamp.pos, S.sab.pos); if (kind === 'wd') d = -d;
+  var moved = stepFig(S, 'lamp', d, n);
+  if (moved === 0) log(S, 'him', kind === 'adv' ? 'He presses, but he’s already on you.' : 'He tries to back off, but the wall stops him.');
+  else log(S, 'him', 'He ' + (kind === 'adv' ? 'advances ' : 'withdraws ') + moved + '. Distance ' + dist(S) + '.');
+}
+
+function checkEnd(S){
+  if (S.result) return;
+  if (S.lamp.wounds >= S.settings.lampHP) S.result = 'win';
+  else if (S.alarms >= 3) S.result = 'alarm';
+}
+
+function preSab(S, a){
+  var sc = a.sc;
+  if (sc.opts){ var o = sc.opts[a.p.opt || 0]; moveSab(S, o.dir, o.n, sc.name, !!sc.pass); }
+  if (sc.move) moveSab(S, 'toward', sc.move, sc.name);
+  if (sc.dodge) log(S, 'you', 'You melt into the dark between the lamps.');
+  if (sc.parry) log(S, 'you', sc.parry === 'wound' ? 'You hold a riposte ready.' : 'You hold a parry ready.');
+  if (sc.slip){
+    if (dist(S) === 1){
+      var t = S.lamp.pos + (S.lamp.pos - S.sab.pos);
+      if (t >= 1 && t <= TRACK){
+        S.sab.pos = t;
+        log(S, 'you', sc.name + ': you slip past him to space ' + t + (S.settings.facing ? '. He’s still facing where you were.' : '.'));
+      }
+      else log(S, 'you', 'His back is to the wall: there’s no room to slip past.');
+    } else log(S, 'you', 'He’s too far away to slip past.');
+  }
+  if (sc.turn && S.settings.facing && S.sab.face !== dirTo(S.sab.pos, S.lamp.pos)){ S.sab.face = dirTo(S.sab.pos, S.lamp.pos); log(S, 'you', 'You spin to face him.'); }
+  if (sc.peek){
+    if (S.deck.length === 0) reshuffle(S);
+    var order = S.smokeNext ? [S.deck[0]].concat(S.deck.slice(1).reverse()) : S.deck.slice().reverse();
+    S.peek = order.slice(0, sc.peek);
+    var names = S.peek.map(function(id){ return lampFace(S, id).name; });
+    log(S, 'you', 'You study his stance. ' + (names.length > 1 ? 'His next two cards: ' + names.join(', then ') : 'Next round he plays ' + names[0]) + '.');
+    var first = S.peek[0];
+    if ((S.settings.study === 'nightmare' || S.settings.study === 'both' || S.settings.study === 'watchnm') && first != null && !S.turned[first]){
+      S.turned[first] = true;
+      log(S, 'bp', 'He feels you watching. ' + LAMP[first].w.name + ' turns to its Nightmare side: ' + LAMP[first].n.name + '.');
+    }
+  }
+  if (sc.recover){
+    var n = recoverN(S, sc);
+    log(S, 'rec', sc.name + ': you steady your breathing. Take back up to ' + n + ' cards.');
+    S.pending.push({t:'recover', n:n, src:a.p.id});
+  }
+}
+
+function preLamp(S, a){
+  var b = a.b, m;
+  switch (b.a){
+    case 'adv': case 'advStrike': moveLamp(S, 'adv', b.n); break;
+    case 'wd': moveLamp(S, 'wd', b.n); break;
+    case 'guard': S.guard = true; log(S, 'him', 'He sets the pole crosswise in a guard.'); break;
+    case 'toDist':
+      var d = dist(S);
+      if (d > b.d) moveLamp(S, 'adv', d - b.d);
+      else if (d < b.d) moveLamp(S, 'wd', b.d - d);
+      else log(S, 'him', 'He holds his ground at distance ' + d + '.');
+      break;
+    case 'shove':
+      if (dist(S) === 1){
+        m = stepFig(S, 'sab', -dirTo(S.sab.pos, S.lamp.pos), b.n);
+        log(S, 'him', m ? 'He shoves you back ' + m + '. Distance ' + dist(S) + '.' : 'He shoves, but your back is to the wall.');
+      } else log(S, 'him', 'He shoves at empty air.');
+      break;
+    case 'signal':
+      if (dist(S) !== 1){ S.alarms++; log(S, 'hurt', 'He swings the lantern high. Alarm ' + S.alarms + ' of 3.'); checkEnd(S); }
+      else log(S, 'hit', 'You’re right on top of him: the signal never goes up.');
+      break;
+    case 'smoke':
+      moveLamp(S, 'wd', 1); S.smokeNext = true;
+      log(S, 'him', 'Smoke pours from the lantern. Next round you get no tell.');
+      break;
+    case 'pull':
+      m = stepFig(S, 'sab', dirTo(S.sab.pos, S.lamp.pos), b.n);
+      log(S, 'him', m ? 'The chain drags you ' + m + ' closer. Distance ' + dist(S) + '.' : 'The chain snaps taut, but you’re already on him.');
+      break;
+    case 'unblink':
+      var p2 = S.plan[1];
+      if (!p2 || !p2.id || p2.breath){ S.unblink = false; log(S, 'him', 'He looks for your next move, but there isn’t one.'); break; }
+      var sc2 = face(S, p2.id);
+      S.unblink = !!sc2.strike;
+      log(S, 'him', 'He looks straight through you and sees your Beat 2: ' + sc2.name + '.' + (sc2.strike ? ' That strike won’t touch him.' : ''));
+      break;
+  }
+}
+
+function strikeSpec(S, a){
+  if (a.who === 'sab') return a.sc.strike || null;
+  var b = a.b;
+  return (b.a === 'strike' || b.a === 'advStrike') ? {min:b.min, max:b.max, dmg:1, hook:!!b.hook, omni:!!b.omni} : null;
+}
+function inRange(S, spec){ var d = dist(S); return d >= spec.min && d <= spec.max; }
+// Facing: both turn to face each other at the start of each round; moving doesn't turn anyone unless a
+// card says so. Strikes only hit in front, unless the card says "on either side".
+function faceEachOther(S){ S.sab.face = dirTo(S.sab.pos, S.lamp.pos); S.lamp.face = dirTo(S.lamp.pos, S.sab.pos); }
+function facingOK(S, who, spec){
+  if (!S.settings.facing || spec.omni) return true;
+  var me = S[who], other = who === 'sab' ? S.lamp : S.sab;
+  return dirTo(me.pos, other.pos) === me.face;
+}
+
+function applyStrike(S, a, spec, ok, bi){
+  var d = dist(S);
+  if (a.who === 'sab'){
+    var nm = a.sc.name;
+    if (!ok){ log(S, 'you', nm + ' misses: he’s at distance ' + d + '.'); return false; }
+    if (!facingOK(S, 'sab', spec)){ log(S, 'you', 'Your ' + nm + ' cuts the air: you’re facing away from him.'); return false; }
+    if (bi === 1 && S.unblink){ log(S, 'him', 'He saw your ' + nm + ' coming and steps through it.'); return false; }
+    if (S.guard){ S.guard = false; log(S, 'him', 'He catches your ' + nm + ' on the haft.'); return false; }
+    S.lamp.wounds += spec.dmg; S.roundDealt += spec.dmg;
+    log(S, 'hit', nm + ' lands: ' + (spec.dmg > 1 ? spec.dmg + ' wounds' : 'a wound') + '. He has ' + S.lamp.wounds + ' of ' + S.settings.lampHP + '.');
+    return true;
+  }
+  var rs = rangeStr(spec);
+  if (!ok){ log(S, 'him', 'His strike (range ' + rs + ') misses at distance ' + d + '.'); return false; }
+  if (!facingOK(S, 'lamp', spec)){ log(S, 'hit', 'He strikes at empty air: you’re behind him.'); return false; }
+  if (S.dodge){ log(S, 'hit', 'His strike cuts through shadow. You’re not there.'); return false; }
+  if (S.parry === 'cancel' || S.parry === 'wound'){
+    var kind = S.parry; S.parry = 'used';
+    if (kind === 'cancel'){ S.cancelNext = true; log(S, 'hit', 'You parry his strike. His next beat is cancelled.'); }
+    else { S.lamp.wounds += 1; S.roundDealt += 1; log(S, 'hit', 'You turn his strike aside and cut back: a wound. He has ' + S.lamp.wounds + ' of ' + S.settings.lampHP + '.'); }
+    if (S.settings.parryRecovers){ log(S, 'rec', 'You find your rhythm. Take 1 card back.'); S.pending.push({t:'recover', n:1, src:S.parrySrc}); }
+    checkEnd(S);
+    return false;
+  }
+  S.beatWounds++; S.roundTaken++;
+  log(S, 'hurt', 'His strike lands at distance ' + d + '.');
+  if (spec.hook && S.settings.hookPull){
+    var m = stepFig(S, 'sab', dirTo(S.sab.pos, S.lamp.pos), 1);
+    if (m) log(S, 'him', 'The hook drags you in. Distance ' + dist(S) + '.');
+  }
+  return true;
+}
+
+function interrupt(S, acts, a, bi){
+  var other = acts.filter(function(x){ return x !== a; })[0];
+  if (!other || other.done || other.cancelled) return;
+  other.cancelled = true;
+  if (other.who === 'lamp'){ S.cancelledBeats.push(bi); log(S, 'hit', 'The wound staggers him: his ' + SPEED_NAME[other.sp] + ' beat never happens.'); }
+  else log(S, 'hurt', 'The wound breaks your ' + other.sc.name + ' before it starts.');
+}
+
+function resolveBeat(S, bi){
+  var p = S.plan[bi];
+  var sc = (p && p.id && !p.breath) ? face(S, p.id) : null;
+  var lb = lampFace(S, S.current).beats[bi];
+  var youTxt = sc ? sc.name + ' (' + SPEED_NAME[sc.speed] + ')' : (p && p.breath ? 'catching your breath, spending ' + face(S, p.id).name : (p && p.watch ? 'watching him' : 'nothing, your hands are empty'));
+  if (p && p.breath) S.breaths = (S.breaths || 0) + 1;
+  log(S, 'beat', 'Beat ' + (bi + 1) + ' · you: ' + youTxt +
+    ' · him: ' + (S.cancelNext ? 'cancelled' : SPEED_NAME[lb.sp]));
+  if (S.cancelNext){ S.cancelNext = false; S.cancelledBeats.push(bi); log(S, 'hit', 'Your parry broke his rhythm: his Beat ' + (bi + 1) + ' never comes.'); lb = null; }
+  S.parry = sc && sc.parry ? sc.parry : null;
+  S.parrySrc = sc && sc.parry ? p.id : null;
+  S.dodge = !!(sc && sc.dodge);
+  S.beatWounds = 0;
+  if (!p || !p.id) S.emptyBeats++;
+  var acts = [];
+  if (sc){
+    acts.push({who:'sab', sp:sc.speed, p:p, sc:sc, done:false, cancelled:false});
+    S.cards[p.id] = (S.cards[p.id] || 0) + 1;
+    if (S.hand[p.id].side === 'x') S.exertPlays[p.id] = (S.exertPlays[p.id] || 0) + 1;
+  }
+  if (lb) acts.push({who:'lamp', sp:lb.sp, b:lb, done:false, cancelled:false});
+  if (S.settings.ties !== 'together'){
+    // Ties go to him: at equal speed his action resolves first, so a wounding strike cancels yours.
+    acts.sort(function(x, y){ return x.sp - y.sp || (x.who === 'lamp' ? -1 : 1); });
+    if (acts.length === 2 && acts[0].sp === acts[1].sp) log(S, 'sys', 'Both ' + SPEED_NAME[acts[0].sp] + ': he goes first.');
+    for (var ai = 0; ai < acts.length; ai++){
+      var act = acts[ai];
+      if (act.cancelled) continue;
+      if (act.who === 'sab') preSab(S, act); else preLamp(S, act);
+      if (S.result) return;
+      var sp1 = strikeSpec(S, act);
+      if (sp1){
+        var hit1 = applyStrike(S, act, sp1, inRange(S, sp1), bi);
+        checkEnd(S); if (S.result) return;
+        if (hit1) interrupt(S, acts, act, bi);
+      }
+      act.done = true;
+    }
+    return;
+  }
+  var speeds = acts.map(function(a){ return a.sp; }).filter(function(v, i, arr){ return arr.indexOf(v) === i; }).sort();
+  for (var si = 0; si < speeds.length; si++){
+    var sp = speeds[si];
+    var group = acts.filter(function(a){ return a.sp === sp && !a.cancelled; });
+    if (!group.length) continue;
+    if (group.length === 1){
+      var a = group[0];
+      if (a.who === 'sab') preSab(S, a); else preLamp(S, a);
+      if (S.result) return;
+      var spec = strikeSpec(S, a);
+      if (spec){
+        var hit = applyStrike(S, a, spec, inRange(S, spec), bi);
+        checkEnd(S); if (S.result) return;
+        if (hit) interrupt(S, acts, a, bi);
+      }
+      a.done = true;
+    } else {
+      log(S, 'sys', 'Both ' + SPEED_NAME[sp] + ': moves resolve first, then strikes land together.');
+      for (var gi = 0; gi < group.length; gi++){
+        if (group[gi].who === 'sab') preSab(S, group[gi]); else preLamp(S, group[gi]);
+        if (S.result) return;
+      }
+      var strikes = group.map(function(x){ return {a:x, spec:strikeSpec(S, x)}; }).filter(function(x){ return x.spec; });
+      var oks = strikes.map(function(x){ return inRange(S, x.spec); });
+      for (var k = 0; k < strikes.length; k++) applyStrike(S, strikes[k].a, strikes[k].spec, oks[k], bi);
+      group.forEach(function(x){ x.done = true; });
+      checkEnd(S);
+      if (S.result) return;
+    }
+  }
+}
+
+function loseCard(S, id, why){
+  var nm = face(S, id).name;
+  S.hand[id].where = 'lost';
+  S.lostOrder.push(id);
+  var left = zone(S, 'hand').length;
+  var msg = why === 'beat' ? 'The blow lands on your ' + nm + ': it’s lost.' : 'The blow catches you off guard and takes your ' + nm + ': it’s lost.';
+  log(S, 'hurt', msg + ' ' + left + ' in hand.');
+  if (S.settings.desperation) S.pending.push({t:'turn'});
+}
+function recoverCard(S, id){
+  S.hand[id].where = 'hand';
+  S.recovered++;
+  log(S, 'rec', face(S, id).name + ' is back in your hand.');
+}
+function choiceOptions(S){
+  var c = S.pending[0];
+  if (!c) return [];
+  if (c.t === 'lose') return zone(S, 'hand');
+  if (c.t === 'turn') return turnable(S);
+  return zone(S, 'fatigue').filter(function(id){ return id !== c.src; });
+}
+function choose(S, id){
+  if (S.phase !== 'choose' || !S.pending.length) return;
+  if (choiceOptions(S).indexOf(id) < 0) return;
+  var c = S.pending[0];
+  if (c.t === 'recover'){
+    recoverCard(S, id);
+    c.n--;
+    if (c.n <= 0) S.pending.shift();
+  } else {
+    S.pending.shift();
+    if (c.t === 'lose') loseCard(S, id, 'bare');
+    else {
+      var from = steadyFace(S, id).name, back = S.hand[id].where === 'fatigue';
+      S.hand[id].side = 'x';
+      if (back){ S.hand[id].where = 'hand'; S.recovered++; }
+      log(S, 'ex', 'Desperation: ' + from + ' turns to ' + exertFace(S, id).name + (back ? ' and comes back to your hand.' : '.'));
+    }
+  }
+  advanceChoices(S);
+}
+function advanceChoices(S){
+  while (S.pending.length){
+    var c = S.pending[0], opts = choiceOptions(S);
+    if (c.t === 'lose' && !opts.length){ S.pending = []; fall(S, 'finished'); return; }
+    if (c.t !== 'lose' && !opts.length){ S.pending.shift(); continue; }
+    if (c.t === 'recover' && opts.length <= c.n){ opts.forEach(function(id){ recoverCard(S, id); }); S.pending.shift(); continue; }
+    S.phase = 'choose';
+    if (opts.length === 1){ choose(S, opts[0]); return; }
+    return;
+  }
+  S.phase = S.afterChoose;
+  if (S.phase === 'beat2' && zone(S, 'hand').length === 0) fall(S, 'spent');
+}
+
+function pushRound(S){
+  S.rounds.push({r:S.round, tell:S.roundTell, nm:S.roundNm, card:S.roundCard, plan:S.plan.map(function(p){ return p && p.id ? (p.breath ? 'breath' : p.id) : 'empty'; }), dealt:S.roundDealt, taken:S.roundTaken});
+}
+function finish(S){
+  if (!S.rounds.length || S.rounds[S.rounds.length - 1].r !== S.round) pushRound(S);
+  S.phase = 'over';
+  S.pending = [];
+  var msg = S.result === 'win' ? 'The Lamplighter falls. Sabbialt slips deeper into Ceryllian.'
+          : S.result === 'alarm' ? 'Bells across the island. The watch arrives and the run ends.'
+          : S.fallReason === 'spent' ? 'Your hands are empty. Sabbialt staggers, and the Lamplighter finishes him.'
+          : 'Caught with nothing in his hands, Sabbialt is struck down.';
+  log(S, 'end', msg);
+}
+function fall(S, reason){ S.result = 'wounds'; S.fallReason = reason; finish(S); }
+
+function resolveNext(S){
+  if (S.phase !== 'flipped' && S.phase !== 'beat1') return;
+  var bi = S.beatDone;
+  resolveBeat(S, bi);
+  S.beatDone++;
+  if (S.result){ finish(S); return; }
+  S.afterChoose = bi === 0 ? 'beat1' : 'beat2';
+  var p = S.plan[bi];
+  var wounds = S.beatWounds; S.beatWounds = 0;
+  if (p && p.id && S.hand[p.id].where === 'play'){
+    if (wounds > 0){
+      if (p.breath) log(S, 'hurt', 'He catches you mid-breath.');
+      loseCard(S, p.id, 'beat'); wounds--;
+    } else if (p.breath){
+      S.hand[p.id].where = 'fatigue';
+      if (zone(S, 'fatigue').some(function(id){ return id !== p.id; })){ log(S, 'rec', 'You catch your breath. Take a different card back.'); S.pending.push({t:'recover', n:1, src:p.id}); }
+      else log(S, 'rec', 'You catch your breath, but there’s nothing else in your fatigue pile to take back.');
+    }
+    else if (S.settings.breatheKeeps && p.id === 'breathe'){ S.hand[p.id].where = 'hand'; log(S, 'rec', face(S, p.id).name + ' goes back to your hand.'); }
+    else S.hand[p.id].where = 'fatigue';
+  }
+  for (; wounds > 0; wounds--) S.pending.push({t:'lose'});
+  advanceChoices(S);
+}
+
+function turnTop(S){
+  if (!S.deck.length) reshuffle(S);
+  for (var i = S.deck.length - 1; i >= 0; i--){
+    var id = S.deck[i];
+    if (!S.turned[id]){
+      S.turned[id] = true;
+      log(S, 'bp', i === S.deck.length - 1 ? 'The top card of his deck turns to its Nightmare side. Its tell now burns red.' : 'A card deeper in his deck turns to its Nightmare side.');
+      return;
+    }
+  }
+  for (var j = S.discard.length - 1; j >= 0; j--){
+    var dId = S.discard[j];
+    if (!S.turned[dId]){ S.turned[dId] = true; log(S, 'bp', LAMP[dId].w.name + ' in his discard turns to ' + LAMP[dId].n.name + '.'); return; }
+  }
+}
+function endRound(S){
+  if (S.phase !== 'beat2') return;
+  var cur = S.current, turns = S.roundDealt;
+  S.current = null;
+  if (turns > 0 && S.settings.lampTurn === 'inplay' && !S.turned[cur]){
+    S.turned[cur] = true; turns--;
+    S.deck = shuffle(S.deck.concat([cur])); S.peek = [];
+    log(S, 'bp', LAMP[cur].w.name + ' turns to its Nightmare side, ' + LAMP[cur].n.name + ', and is shuffled back into his deck.');
+  } else S.discard.push(cur);
+  for (; turns > 0; turns--) turnTop(S);
+  pushRound(S);
+  S.guard = false; S.unblink = false; S.parry = null; S.parrySrc = null; S.dodge = false;
+  if (zone(S, 'hand').length === 0){ fall(S, 'spent'); return; }
+  S.round++;
+  prepareRound(S);
+}
+
+function buildRecord(S){
+  return {
+    v:6, at:new Date().toISOString(), started:S.started, result:S.result, fall:S.fallReason, rounds:S.round,
+    hand:zone(S, 'hand').length, fatigue:zone(S, 'fatigue').length, lost:S.lostOrder.slice(), exerted:exertCount(S),
+    recovered:S.recovered, emptyBeats:S.emptyBeats, breaths:S.breaths || 0, lampWounds:S.lamp.wounds, alarms:S.alarms, turned:turnedCount(S),
+    settings:Object.assign({}, S.settings), cards:Object.assign({}, S.cards), exertPlays:Object.assign({}, S.exertPlays), detail:S.rounds.slice()
+  };
+}
+/*ENGINE-END*/
+</script>
+
+<script>
+(function(){
+  // ===== Shared playtest log =====
+  // For copies hosted outside Claude (for example on GitHub Pages): paste the web app URL from
+  // shared-log/Code.gs between the quotes. Left empty, fights stay on each player's device.
+  var SHARED_LOG_URL = '';
+
+  var S, settings, tab = 'duel', db = null, dbState = 'pending', remoteFights = [], localFights = [], bound = false;
+  var sharedState = 'off', scope = 'all';
+  var prev = {lost:0, lamp:0};
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  // ---------- storage (per-viewer conveniences) ----------
+  function lsGet(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+  function persist(){ lsSet('cd3-state', S); lsSet('cd-tab', tab); }
+  function loadSettings(){
+    var s = lsGet('cd3-settings') || {}, o = {};
+    Object.keys(DEFAULT_SETTINGS).forEach(function(k){ o[k] = (k in s && typeof s[k] === typeof DEFAULT_SETTINGS[k]) ? s[k] : DEFAULT_SETTINGS[k]; });
+    return o;
+  }
+  function validState(s){ return !!(s && s.v === 6 && s.hand && s.hand.breathe && s.sab && s.lamp && Array.isArray(s.deck) && Array.isArray(s.pending)); }
+
+  // ---------- glyphs ----------
+  var SAB_SVG = '<svg viewBox="0 0 24 34" aria-hidden="true"><path d="M12 1 L20 12 Q20.5 16.5 16.5 18 L17 33 L7 33 L7.5 18 Q3.5 16.5 4 12 Z" fill="var(--sab)"/><path d="M9 12.5 Q12 11 15 12.5 L14 14.5 Q12 13.6 10 14.5 Z" fill="var(--bg)"/></svg>';
+  var LAMP_SVG = '<svg viewBox="0 0 30 36" aria-hidden="true"><circle cx="21" cy="7" r="7" fill="var(--lamp)" opacity=".22"/><line x1="21" y1="2" x2="21" y2="35" stroke="var(--muted)" stroke-width="1.6"/><rect x="17.5" y="4" width="7" height="8" rx="1.5" fill="var(--lamp)"/><path d="M11 9 Q16 11 16 16 L16 35 L5 35 L5 16 Q5 11 11 9 Z" fill="var(--fg)" opacity=".86"/><circle cx="10.5" cy="13" r="3.4" fill="var(--fg)"/></svg>';
+
+  // ---------- duel render ----------
+  function pips(total, filled, cls){
+    var h = '';
+    for (var i = 1; i <= total; i++) h += '<span class="pip' + (i <= filled ? ' ' + cls : '') + '"></span>';
+    return h;
+  }
+  function sabPips(){
+    var h = '', order = ['hand', 'play', 'fatigue', 'lost'];
+    order.forEach(function(z){
+      SAB_ORDER.forEach(function(id){
+        var c = S.hand[id]; if (c.where !== z) return;
+        var cls = z === 'lost' ? 'l' : (z === 'fatigue' ? (c.side === 'x' ? 'fx' : 'f') : (c.side === 'x' ? 'x' : 'h'));
+        h += '<span class="pip ' + cls + '" title="' + esc(face(S, id).name) + '"></span>';
+      });
+    });
+    return h;
+  }
+  function phaseText(){
+    switch (S.phase){
+      case 'plan': return canCommit(S) ? 'Ready to commit' : 'Plan your two beats';
+      case 'flipped': return 'His card is face up';
+      case 'choose':
+        var t = S.pending[0] && S.pending[0].t;
+        return t === 'turn' ? 'Desperation' : t === 'recover' ? 'Catching your breath' : 'You were hit';
+      case 'beat1': return 'Beat 1 resolved';
+      case 'beat2': return 'Round complete';
+      default: return 'Fight over';
+    }
+  }
+  function afterB1(){ return S.phase === 'beat1' || (S.phase === 'choose' && S.afterChoose === 'beat1'); }
+  function afterB2(){ return S.phase === 'beat2' || (S.phase === 'choose' && S.afterChoose === 'beat2'); }
+  function nextLampBeat(){
+    if (S.phase === 'flipped') return {b:lampFace(S, S.current).beats[0], i:0};
+    if (afterB1()) return {b:lampFace(S, S.current).beats[1], i:1};
+    if (S.phase === 'plan' && S.known) return {b:lampFace(S, S.upcoming).beats[0], i:0};
+    return null;
+  }
+  function renderTrack(){
+    var nb = nextLampBeat(), zoneCells = [];
+    var cancelled = nb && (S.cancelNext || S.cancelledBeats.indexOf(nb.i) >= 0);
+    if (nb && !cancelled && nb.b.a === 'strike'){
+      for (var c = 1; c <= TRACK; c++){
+        var d = Math.abs(c - S.lamp.pos);
+        var inFront = nb.b.omni || !S.settings.facing || dirTo(S.lamp.pos, c) === S.lamp.face;
+        if (d >= nb.b.min && d <= nb.b.max && inFront) zoneCells.push(c);
+      }
+    }
+    var h = '';
+    for (var i = 1; i <= TRACK; i++) h += '<div class="cell' + (zoneCells.indexOf(i) >= 0 ? ' danger' : '') + '"><span class="n">' + i + '</span></div>';
+    var lostNow = S.lostOrder.length;
+    var sabHit = lostNow > prev.lost, lampHit = S.lamp.wounds > prev.lamp;
+    var showFace = S.settings.facing;
+    var chev = function(f){ return showFace ? '<span class="facing" aria-hidden="true">' + (f < 0 ? '‹' : '›') + '</span>' : ''; };
+    var faceWord = function(f){ return f < 0 ? 'left' : 'right'; };
+    h += '<div class="token' + (sabHit ? ' hit' : '') + '" style="--i:' + (S.sab.pos - 1) + '" title="Sabbialt' + (showFace ? ', facing ' + faceWord(S.sab.face) : '') + '">' + SAB_SVG + chev(S.sab.face) + '</div>';
+    h += '<div class="token' + (lampHit ? ' hit' : '') + (S.lamp.face < 0 ? ' flip' : '') + '" style="--i:' + (S.lamp.pos - 1) + '" title="The Lamplighter' + (showFace ? ', facing ' + faceWord(S.lamp.face) : '') + '">' + LAMP_SVG + chev(S.lamp.face) + '</div>';
+    $('#track').innerHTML = h;
+    prev = {lost:lostNow, lamp:S.lamp.wounds};
+    $('#distLabel').innerHTML = 'Distance <b>' + dist(S) + '</b>';
+    $('#zoneLabel').innerHTML = zoneCells.length ? '<span class="zone-key">His Beat ' + (nb.i + 1) + ' strike zone</span>' : '';
+  }
+  function renderEnemy(){
+    var el = $('#ecard');
+    var faceUp = (S.phase !== 'plan' && !!S.current) || (S.phase === 'plan' && S.known);
+    var id = S.phase === 'plan' ? S.upcoming : (S.current || S.upcoming);
+    if (!faceUp){
+      if (S.hidden && S.phase === 'plan'){
+        el.className = 'ecard back';
+        el.innerHTML = '<div class="tell-sym" style="color:var(--muted)">?</div><div class="tell-name">No tell</div><div class="tell-sub">Smoke hides his intent. This card comes from the bottom of his deck.</div>';
+        return;
+      }
+      var c = LAMP[id], t = TELLS[c.tell], nm = !!S.turned[id];
+      var hint = S.settings.rangeOnBack ? '<div class="range-hint">Strikes: ' + lampFace(S, id).beats.map(rangeStr).join(' | ') + '</div>' : '';
+      el.className = 'ecard back' + (nm ? ' nm' : '');
+      el.innerHTML = (nm ? '<div class="nm-tag">Nightmare</div>' : '') + '<div class="tell-sym">' + t.sym + '</div><div class="tell-name">' + t.name + '</div><div class="tell-sub">His next card</div>' + hint;
+      return;
+    }
+    var card = LAMP[id], f = lampFace(S, id), tt = TELLS[card.tell], isNm = !!S.turned[id];
+    var where = S.phase === 'plan' ? 'Studied' : (S.roundTell === 'hidden' ? 'From the bottom' : 'In play');
+    var h = '<div class="ehead"><div><div class="etag">' + where + (isNm ? ' · <span class="nmw">Nightmare</span>' : '') + '</div><div class="ename">' + esc(f.name) + '</div></div><div class="etell" title="' + tt.name + '">' + tt.sym + '</div></div>';
+    var a1 = afterB1(), a2 = afterB2();
+    f.beats.forEach(function(b, i){
+      var cls = 'ebeat';
+      var cancelled = S.cancelledBeats.indexOf(i) >= 0 || (S.cancelNext && ((S.phase === 'plan' || S.phase === 'flipped') ? i === 0 : (a1 && i === 1)));
+      if (cancelled) cls += ' cancelled';
+      if ((S.phase === 'flipped' && i === 0) || (S.phase === 'beat1' && i === 1)) cls += ' active';
+      if ((a1 && i === 0) || a2 || (S.phase === 'over' && i < S.beatDone)) cls += ' done';
+      h += '<div class="' + cls + '"><div class="bh"><span>Beat ' + (i + 1) + '</span><span class="sp' + b.sp + '">' + SPEED_NAME[b.sp] + '</span></div><div class="bt">' + esc(beatText(S, b)) + '</div></div>';
+    });
+    el.className = 'ecard front' + (isNm ? ' nm' : '');
+    el.innerHTML = h;
+  }
+  function renderDeckInfo(){
+    var counts = {press:0, hold:0, withdraw:0};
+    S.deck.forEach(function(id){ counts[LAMP[id].tell]++; });
+    var tc = turnedCount(S);
+    $('#deckinfo').innerHTML = '<span>Deck ' + S.deck.length + '</span><span>Discard ' + S.discard.length + '</span>' +
+      (tc ? '<span class="nmc">Turned ' + tc + '</span>' : '') +
+      '<span>Left: ' + TELLS.press.sym + counts.press + ' ' + TELLS.hold.sym + counts.hold + ' ' + TELLS.withdraw.sym + counts.withdraw + '</span>';
+  }
+  function renderSlots(){
+    var h = '', a1 = afterB1(), a2 = afterB2();
+    for (var i = 0; i < 2; i++){
+      var p = S.plan[i];
+      var active = (S.phase === 'flipped' && i === 0) || (S.phase === 'beat1' && i === 1);
+      var done = (a1 && i === 0) || a2 || (S.phase === 'over' && i < S.beatDone);
+      if (!p){
+        h += '<div class="slot"><div class="sh"><span>Beat ' + (i + 1) + '</span></div><div class="empty">Tap a card below to play it here, or to spend it catching your breath.</div></div>';
+        continue;
+      }
+      if (!p.id){
+        h += '<div class="slot filled' + (active ? ' active' : '') + (done ? ' done' : '') + '"><div class="sh"><span>Beat ' + (i + 1) + '</span></div>' +
+          '<div class="sn">' + (p.watch ? 'Watching' : 'Empty') + '</div>' +
+          '<div class="skipline">' + (p.watch ? 'Study takes this beat too, so you aren’t resting.' : 'You have nothing left to put here.') + '</div>' +
+          '<div class="warnline">A hit here costs a card from your hand, or finishes you if your hand is empty.</div></div>';
+        continue;
+      }
+      var hs = S.hand[p.id], sc = face(S, p.id), planning = S.phase === 'plan';
+      var canBreathe = planning && !watchCard(S, p.id);
+      var modeChips = canBreathe ? '<div class="chips"><button type="button" class="chip" data-breath="' + i + '" data-on="0" aria-pressed="' + !p.breath + '">Play it</button>' +
+        '<button type="button" class="chip breathchip" data-breath="' + i + '" data-on="1" aria-pressed="' + !!p.breath + '">Catch breath</button></div>' : '';
+      if (p.breath){
+        h += '<div class="slot filled skip' + (active ? ' active' : '') + (done ? ' done' : '') + '"><div class="sh"><span>Beat ' + (i + 1) + ' · breath</span>' +
+          (planning ? '<button class="xbtn" type="button" data-clear="' + i + '" aria-label="Remove ' + esc(sc.name) + ' from Beat ' + (i + 1) + '">×</button>' : '') + '</div>' +
+          '<div class="sn rec">Catch your breath</div>' +
+          '<div class="skipline">Spend ' + esc(sc.name) + '. If he doesn’t hit you here, take a different card back from your fatigue pile.</div>' + modeChips +
+          (hs.where === 'lost' ? '<div class="warnline">Caught mid-breath: ' + esc(sc.name) + ' is lost.</div>' : '<div class="warnline">If he hits you here, ' + esc(sc.name) + ' is lost.</div>') + '</div>';
+        continue;
+      }
+      h += '<div class="slot filled' + (active ? ' active' : '') + (done ? ' done' : '') + '"><div class="sh"><span>Beat ' + (i + 1) + ' · <span class="sp' + sc.speed + '">' + SPEED_NAME[sc.speed] + '</span></span>' +
+        (S.phase === 'plan' ? '<button class="xbtn" type="button" data-clear="' + i + '" aria-label="Remove ' + esc(sc.name) + ' from Beat ' + (i + 1) + '">×</button>' : '') + '</div>' +
+        '<div class="sn' + (hs.side === 'x' ? ' ex' : '') + '">' + esc(sc.name) + (hs.side === 'x' ? '<span class="xb">Exert</span>' : '') + '</div>' + modeChips;
+      if (sc.opts){
+        h += '<div class="chips">';
+        sc.opts.forEach(function(o, k){
+          if (S.phase === 'plan') h += '<button type="button" class="chip" data-slot="' + i + '" data-opt="' + k + '" aria-pressed="' + (p.opt === k) + '">' + o.label + '</button>';
+          else if (p.opt === k) h += '<span class="chip static" aria-pressed="true">' + o.label + '</span>';
+        });
+        h += '</div>';
+      }
+      if (hs.where === 'lost') h += '<div class="warnline">Wounded and lost.</div>';
+      h += '</div>';
+    }
+    $('#slots').innerHTML = h;
+  }
+  function renderAction(){
+    var b = $('#actBtn');
+    b.hidden = S.phase === 'over' || S.phase === 'choose';
+    b.disabled = S.phase === 'plan' && !canCommit(S);
+    b.textContent = {plan:'Commit beats', flipped:'Resolve Beat 1', beat1:'Resolve Beat 2', beat2:'Next round'}[S.phase] || '';
+    var n = [], warn = false;
+    if (S.phase === 'plan'){
+      if (S.studyNote) n.push(S.studyNote);
+      if (S.known) n.push('You studied him: his card is face up.');
+      if (S.cancelNext) n.push('Your parry will cancel his Beat 1.');
+      var inHand = zone(S, 'hand').length;
+      if (inHand <= 3){
+        warn = true;
+        n.push((inHand === 1 ? 'One card left.' : 'Only ' + inHand + ' cards in hand.') +
+          ' If your hand is empty at the end of a round, he finishes you. Spending a card to catch your breath takes a different one back, if he doesn’t hit you.');
+      }
+    }
+    var el = $('#notice'); el.hidden = !n.length; el.textContent = n.join(' ');
+    el.className = 'notice' + (warn ? ' warn' : '');
+  }
+  function renderHand(){
+    var h = '';
+    var full = (!!S.plan[0] && !!S.plan[1]) || watchPlaced(S);
+    zone(S, 'hand').forEach(function(id){
+      var hs = S.hand[id], sc = face(S, id);
+      var slot = S.plan.findIndex(function(p){ return p && p.id === id; });
+      var tag = slot >= 0 ? 'Beat ' + (slot + 1) : (sc.recover ? 'Recovery' : (sc.strike ? 'Strike' : ''));
+      h += '<button type="button" class="hcard' + (hs.side === 'x' ? ' exert' : '') + '" data-card="' + id + '" aria-pressed="' + (slot >= 0) + '"' + (full && slot < 0 ? ' disabled' : '') + '>' +
+        '<div class="top-l"><span class="hn">' + sc.name + (hs.side === 'x' ? '<span class="xb">Exert</span>' : '') + '</span><span class="speed sp' + sc.speed + '">' + SPEED_NAME[sc.speed] + '</span></div>' +
+        '<div class="ht">' + esc(cardText(S, sc)) + '</div>' + (tag ? '<div class="tag' + (sc.recover && slot < 0 ? ' rec' : '') + '">' + tag + '</div>' : '') + '</button>';
+    });
+    $('#hand').innerHTML = h || '<div class="empty-state">Your hands are empty.</div>';
+    $('#handNote').textContent = zone(S, 'hand').length + ' in hand · ' + zone(S, 'fatigue').length + ' fatigued · ' + zone(S, 'lost').length + ' lost';
+  }
+  function renderPile(){
+    var f = zone(S, 'fatigue'), l = zone(S, 'lost');
+    var h = '<h3>Fatigue pile</h3>';
+    h += f.length ? '<div class="minis">' + f.map(function(id){ return '<span class="mini' + (S.hand[id].side === 'x' ? ' x' : '') + '">' + esc(face(S, id).name) + '</span>'; }).join('') + '</div>' : '<div class="none">Empty. Cards you play land here.</div>';
+    if (l.length) h += '<h3>Lost</h3><div class="minis">' + l.map(function(id){ return '<span class="mini lost">' + esc(face(S, id).name) + '</span>'; }).join('') + '</div>';
+    $('#pileWrap').innerHTML = h;
+  }
+  function renderChoice(){
+    var w = $('#choiceWrap');
+    if (S.phase !== 'choose' || !S.pending.length){ w.hidden = true; w.innerHTML = ''; return; }
+    var c = S.pending[0], opts = choiceOptions(S), h;
+    if (c.t === 'lose'){
+      h = '<div class="choice lose"><div class="eyebrow">Wound</div><h2>Choose a card to lose</h2><p>He hit you in a beat with no card in it. Pick a card from your hand to lose for good.</p><div class="opts">';
+      opts.forEach(function(id){
+        var sc = face(S, id);
+        h += '<button type="button" class="opt" data-choose="' + id + '"><b>' + esc(sc.name) + '</b><span class="ot">' + SPEED_NAME[sc.speed] + ': ' + esc(cardText(S, sc)) + '</span></button>';
+      });
+    } else if (c.t === 'turn'){
+      h = '<div class="choice turn"><div class="eyebrow">Desperation</div><h2>Turn a card to its Exert side</h2><p>Losing a card drives you past your limits. The card you pick stays on its Exert side for the rest of the fight, whether it’s in your hand or your fatigue pile.</p><div class="opts">';
+      opts.forEach(function(id){
+        var x = exertFace(S, id), where = S.hand[id].where;
+        h += '<button type="button" class="opt" data-choose="' + id + '"><b>' + esc(steadyFace(S, id).name) + ' <span class="arrow">→ ' + esc(x.name) + '</span></b><span class="ot">' + SPEED_NAME[x.speed] + ': ' + esc(cardText(S, x)) + '</span><span class="on">' + (where === 'hand' ? 'In hand' : where === 'play' ? 'In play' : 'Fatigued') + '</span></button>';
+      });
+    } else {
+      h = '<div class="choice recover"><div class="eyebrow">Recovery</div><h2>Take a card back</h2><p>' + (c.n > 1 ? 'Pick ' + c.n + ' more cards' : 'Pick 1 more card') + ' from your fatigue pile to return to your hand.</p><div class="opts">';
+      opts.forEach(function(id){
+        var sc = face(S, id);
+        h += '<button type="button" class="opt" data-choose="' + id + '"><b>' + esc(sc.name) + (S.hand[id].side === 'x' ? ' <span class="arrow">Exert</span>' : '') + '</b><span class="ot">' + SPEED_NAME[sc.speed] + ': ' + esc(cardText(S, sc)) + '</span></button>';
+      });
+    }
+    h += '</div></div>';
+    w.innerHTML = h;
+    w.hidden = false;
+  }
+  function lineHTML(l){ return '<div class="line ' + l.k + '">' + esc(l.t) + '</div>'; }
+  function renderFeed(){
+    var lines = S.log.filter(function(l){ return l.r === S.round; });
+    $('#feed').innerHTML = lines.map(lineHTML).join('') || '<div class="line sys">Waiting for the first beat.</div>';
+  }
+  function renderLog(){
+    var h = '', last = null;
+    S.log.forEach(function(l){
+      if (l.r !== last){ h += '<div class="rhead">Round ' + l.r + '</div>'; last = l.r; }
+      h += lineHTML(l);
+    });
+    $('#log').innerHTML = h;
+  }
+  function roundsSummary(rs){
+    var o = {clean:0, read:0, trade:0, quiet:0};
+    rs.forEach(function(r){
+      if (r.dealt > 0 && r.taken === 0) o.clean++;
+      else if (r.taken > 0 && r.dealt === 0) o.read++;
+      else if (r.taken > 0 && r.dealt > 0) o.trade++;
+      else o.quiet++;
+    });
+    return o;
+  }
+  function renderResult(){
+    var w = $('#resultWrap');
+    if (S.phase !== 'over'){ w.hidden = true; w.innerHTML = ''; return; }
+    var title = S.result === 'win' ? 'The Lamplighter falls' : S.result === 'alarm' ? 'The watch arrives' : (S.fallReason === 'spent' ? 'Nothing left in your hands' : 'Struck down');
+    var o = roundsSummary(S.rounds);
+    var save = S.saved === 'shared' || S.saved === 'sent' ? 'Logged to the shared playtest log' + (playerName() ? ' as ' + playerName() + '.' : '. Add your name on the Playtests tab so your fights are easy to spot.') :
+      S.saved === 'local' ? 'Logged on this device.' + (S.saveErr ? ' ' + S.saveErr : (SHARED_LOG_URL ? ' It will be sent to the shared log next time you’re online.' : '')) : 'Logging this fight…';
+    w.innerHTML = '<div class="result"><div class="eyebrow">' + (S.result === 'win' ? 'Victory' : 'Defeat') + ' · round ' + S.round + '</div><h2>' + title + '</h2>' +
+      '<div class="kv"><div><span class="k">In hand</span><span class="v">' + zone(S, 'hand').length + '</span></div><div><span class="k">Lost</span><span class="v">' + zone(S, 'lost').length + '</span></div><div><span class="k">Recovered</span><span class="v">' + S.recovered + '</span></div><div><span class="k">He turned</span><span class="v">' + turnedCount(S) + '</span></div></div>' +
+      '<p class="save-note">' + esc(save) + '</p><button class="primary" type="button" id="newFight">New fight</button></div>';
+    w.hidden = false;
+  }
+  function renderDuel(){
+    document.documentElement.setAttribute('data-stage', String(stageOf(S)));
+    $('#sabCount').textContent = zone(S, 'hand').length + ' in hand';
+    $('#sabPips').innerHTML = sabPips();
+    $('#lampPips').innerHTML = pips(S.settings.lampHP, S.lamp.wounds, 'w');
+    $('#alarmPips').innerHTML = pips(3, S.alarms, 'a');
+    $('#stageName').textContent = STAGES[stageOf(S)];
+    $('#dials').textContent = 'Level ' + levelOf(S.settings) + ' · Insight ' + (S.settings.insight || 0);
+    $('#roundLabel').textContent = 'Round ' + S.round;
+    $('#phaseLabel').textContent = phaseText();
+    renderTrack(); renderEnemy(); renderDeckInfo(); renderSlots(); renderAction(); renderChoice();
+    var planning = S.phase === 'plan';
+    $('#handWrap').hidden = !planning;
+    $('#feedWrap').hidden = planning || S.phase === 'over';
+    if (planning) renderHand(); else renderFeed();
+    renderPile(); renderResult(); renderLog();
+  }
+
+  // ---------- cards tab ----------
+  function cardStatus(id){
+    if (S.current === id) return ['play', 'In play'];
+    if (S.deck.indexOf(id) >= 0) return ['deck', 'In deck'];
+    if (S.discard.indexOf(id) >= 0) return ['disc', 'Discard'];
+    return ['disc', '–'];
+  }
+  function sideLine(label, f, on, cls){
+    return '<div class="side' + (on ? ' on ' + cls : '') + '"><span class="sl">' + label + '</span><b>' + esc(f.name) + '</b> · ' +
+      f.beats.map(function(b, i){ return (i + 1) + ' ' + SPEED_NAME[b.sp] + ': ' + esc(beatText(S, b)); }).join(' ') + '</div>';
+  }
+  var ZONE_NAME = {hand:'In hand', play:'In play', fatigue:'Fatigued', lost:'Lost'};
+  function renderDeckTab(){
+    var s = '';
+    SAB_ORDER.forEach(function(id){
+      var hs = S.hand[id], dim = hs.where === 'lost' ? ' style="opacity:.5"' : '';
+      var sf = steadyFace(S, id), xf = exertFace(S, id);
+      s += '<div class="scard"><div class="' + (hs.side === 's' ? 'on' : '') + '"' + dim + '><span class="zone">' + (hs.side === 's' ? ZONE_NAME[hs.where] : 'Steady') + '</span><b>' + sf.name + '</b><span>' + SPEED_NAME[sf.speed] + ': ' + esc(cardText(S, sf)) + '</span></div>' +
+        '<div class="x' + (hs.side === 'x' ? ' on' : '') + '"' + dim + '><span class="zone">' + (hs.side === 'x' ? ZONE_NAME[hs.where] : 'Exert') + '</span><b>' + xf.name + '</b><span>' + SPEED_NAME[xf.speed] + ': ' + esc(cardText(S, xf)) + '</span></div></div>';
+    });
+    $('#sabList').innerHTML = s;
+
+    var tc = turnedCount(S);
+    var inDeckTurned = S.deck.filter(function(id){ return S.turned[id]; }).length;
+    var topMode = S.settings.lampTurn === 'top';
+    $('#deckLead').textContent = 'Card counting for this fight. Each card has a Watchman side and a Nightmare side, and his wounds turn cards to Nightmare. ' +
+      (tc ? 'Turned so far: ' + tc + (topMode && inDeckTurned ? ', ' + inDeckTurned + ' of them still in his deck (you only see which when one is on top).' : '.') : 'None have turned yet.');
+    var h = '';
+    LAMP_IDS.forEach(function(id){
+      var c = LAMP[id], st = cardStatus(id);
+      var known = S.turned[id] && !(topMode && st[0] === 'deck' && !(S.phase === 'plan' && S.upcoming === id && !S.hidden));
+      var nmOn = !!known;
+      h += '<div class="crow' + (nmOn ? ' nm' : '') + (st[0] === 'disc' ? ' gone' : '') + '"><div class="ct" title="' + TELLS[c.tell].name + '">' + TELLS[c.tell].sym + '</div>' +
+        '<div class="cn"><b>' + id + ' · ' + esc((nmOn ? c.n : c.w).name) + '</b><span class="st ' + st[0] + (nmOn ? ' nmst' : '') + '">' + (nmOn ? 'Nightmare · ' : '') + st[1] + '</span></div>' +
+        sideLine('Watchman', c.w, !nmOn, 'w') + sideLine('Nightmare', c.n, nmOn, 'n') + '</div>';
+    });
+    $('#deckList').innerHTML = h;
+  }
+
+  // ---------- playtests tab ----------
+  function myDevice(){
+    var d = lsGet('cd-device');
+    if (!d){ d = Math.random().toString(36).slice(2, 10); lsSet('cd-device', d); }
+    return d;
+  }
+  function playerName(){ return lsGet('cd-player') || ''; }
+  // Every fight we can see: the shared log (Claude app or Google Sheet) plus this device's own copies, without duplicates.
+  function everyFight(){
+    var seen = {}, out = [];
+    remoteFights.forEach(function(f){ if (f.fid) seen[f.fid] = 1; out.push(Object.assign({src:'shared'}, f)); });
+    localFights.forEach(function(f){ if (!f.fid || !seen[f.fid]) out.push(Object.assign({src:'device'}, f)); });
+    return out.filter(function(f){ return f.v === 6; }).sort(function(a, b){ return String(b.at).localeCompare(String(a.at)); });
+  }
+  function isMine(f){ return f.src === 'device' || (!!f.device && f.device === myDevice()); }
+  function allFights(){ var fs = everyFight(); return scope === 'me' ? fs.filter(isMine) : fs; }
+  function leverTags(st){
+    st = st || {}; var t = [];
+    t.push('Level ' + levelOf(st) + ', Insight ' + (st.insight || 0));
+    if (st.desperation === false) t.push('No desperation');
+    if (st.parryRecovers === false) t.push('Parry doesn’t recover');
+    if (st.breathe && st.breathe !== DEFAULT_SETTINGS.breathe) t.push('Breathe ' + st.breathe);
+    if (st.breatheKeeps === false) t.push('Strict fatigue');
+    if (st.ties === 'together') t.push('Old ties');
+    if (st.facing === false) t.push('No facing');
+    if (st.study === 'full') t.push('One-beat Study');
+    else if (st.study === 'watchnm') t.push('Study turns Nightmare');
+    else if (!st.study) t.push('One-beat Study (old)');
+    if (st.lampTurn === 'inplay') t.push('Turns card in play');
+    if (st.hookPull === false) t.push('No hook pull');
+    if (st.rangeOnBack) t.push('Ranges on backs');
+    return t;
+  }
+  function pct(a, b){ return b ? Math.round(a / b * 100) : 0; }
+  function avg(fs, fn){ var s = 0; fs.forEach(function(f){ s += +fn(f) || 0; }); return fs.length ? s / fs.length : 0; }
+  function renderTests(){
+    var note = $('#storeNote');
+    var every = everyFight();
+    var players = {};
+    every.forEach(function(f){ var k = f.player || 'anonymous'; var p = players[k] = players[k] || {n:0, w:0, r:0}; p.n++; p.r += f.rounds || 0; if (f.result === 'win') p.w++; });
+    var playerCount = Object.keys(players).length;
+    var summary = every.length + (every.length === 1 ? ' fight' : ' fights') + ' from ' + playerCount + (playerCount === 1 ? ' player' : ' players');
+    if (dbState === 'live') note.textContent = 'Everyone who plays this page in Claude logs to one shared log: ' + summary + ' so far.';
+    else if (dbState === 'pending') note.textContent = 'Connecting to the shared log…';
+    else if (sharedState === 'live') note.textContent = 'Shared playtest log: ' + summary + ' so far. Your fights are sent automatically.';
+    else if (sharedState === 'loading') note.textContent = 'Loading the shared playtest log…';
+    else if (sharedState === 'error') note.textContent = 'Couldn’t reach the shared log just now. Your fights are kept on this device and sent next time.';
+    else note.textContent = 'Finished fights are saved on this device. Use “Copy my fight log” below to send them on.';
+    var shared = dbState === 'live' || sharedState !== 'off';
+    $('#scopeRow').hidden = !shared;
+    $('#refreshShared').hidden = sharedState === 'off';
+    document.querySelectorAll('[data-scope]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.scope === scope)); });
+    var nameIn = $('#playerName');
+    if (document.activeElement !== nameIn) nameIn.value = playerName();
+    var fs = allFights(), body = $('#testsBody');
+    var older = remoteFights.concat(localFights).filter(function(f){ return f.v !== 6; }).length;
+    if (!fs.length){
+      body.innerHTML = '<div class="empty-state">' + (scope === 'me' && every.length ? 'You haven’t logged any fights under the current rules yet.' :
+        'No fights logged under the current rules yet. Finish a duel and its result, rounds, cards lost and recovered, and card use land here.') +
+        (older ? ' (' + older + ' fights from earlier rules aren’t counted.)' : '') + '</div>';
+      return;
+    }
+    var wins = 0, alarm = 0, spent = 0, finished = 0, all = [], cards = {}, exertP = {}, lostCount = {}, byTell = {};
+    ['press','hold','withdraw','hidden','nm'].forEach(function(k){ byTell[k] = {n:0, took:0, landed:0}; });
+    fs.forEach(function(f){
+      if (f.result === 'win') wins++;
+      else if (f.result === 'alarm') alarm++;
+      else if (f.fall === 'spent') spent++;
+      else finished++;
+      (f.detail || []).forEach(function(r){
+        all.push(r);
+        var bt = byTell[r.tell] || byTell.hidden; bt.n++; if (r.taken > 0) bt.took++; if (r.dealt > 0) bt.landed++;
+        if (r.nm){ byTell.nm.n++; if (r.taken > 0) byTell.nm.took++; if (r.dealt > 0) byTell.nm.landed++; }
+      });
+      SAB_ORDER.forEach(function(id){ cards[id] = (cards[id] || 0) + ((f.cards || {})[id] || 0); exertP[id] = (exertP[id] || 0) + ((f.exertPlays || {})[id] || 0); });
+      (f.lost || []).forEach(function(id){ lostCount[id] = (lostCount[id] || 0) + 1; });
+    });
+    var o = roundsSummary(all);
+    var h = '<div class="tiles">' +
+      '<div class="tile"><span class="k">Fights</span><span class="v">' + fs.length + '</span><span class="s">' + wins + ' won · ' + (fs.length - wins) + ' lost</span></div>' +
+      '<div class="tile"><span class="k">Win rate</span><span class="v">' + pct(wins, fs.length) + '%</span><span class="s">' + spent + ' empty hands · ' + finished + ' struck · ' + alarm + ' alarm</span></div>' +
+      '<div class="tile"><span class="k">Avg rounds</span><span class="v">' + avg(fs, function(f){ return f.rounds; }).toFixed(1) + '</span><span class="s">per fight</span></div>' +
+      '<div class="tile"><span class="k">Clean reads</span><span class="v">' + pct(o.clean, all.length) + '%</span><span class="s">got read ' + pct(o.read, all.length) + '%</span></div>' +
+      '<div class="tile"><span class="k">Cards lost</span><span class="v">' + avg(fs, function(f){ return (f.lost || []).length; }).toFixed(1) + '</span><span class="s">per fight</span></div>' +
+      '<div class="tile"><span class="k">Recovered</span><span class="v">' + avg(fs, function(f){ return f.recovered; }).toFixed(1) + '</span><span class="s">cards per fight · ' + avg(fs, function(f){ return f.breaths; }).toFixed(1) + ' breaths</span></div>' +
+      '<div class="tile"><span class="k">Exerted</span><span class="v">' + avg(fs, function(f){ return f.exerted; }).toFixed(1) + '</span><span class="s">cards at the end</span></div>' +
+      '<div class="tile"><span class="k">He turned</span><span class="v">' + avg(fs, function(f){ return f.turned; }).toFixed(1) + '</span><span class="s">cards per fight</span></div></div>';
+
+    if (scope === 'all' && playerCount > 1){
+      h += '<div class="group"><h3>Players<small>everyone in the shared log</small></h3><div class="dgrid-wrap"><table class="dgrid players"><tr><th>Player</th><th>Fights</th><th>Win rate</th><th>Avg rounds</th></tr>';
+      Object.keys(players).sort(function(a, b){ return players[b].n - players[a].n; }).forEach(function(k){
+        var p = players[k];
+        h += '<tr><th>' + esc(k) + '</th><td>' + p.n + '</td><td>' + pct(p.w, p.n) + '%</td><td>' + (p.r / p.n).toFixed(1) + '</td></tr>';
+      });
+      h += '</table></div></div>';
+    }
+
+    var cellMap = {}, lvls = {}, ins = {};
+    fs.forEach(function(f){
+      var st = f.settings || {}, L = levelOf(st), I = st.insight || 0, k = L + ':' + I;
+      cellMap[k] = cellMap[k] || {n:0, w:0, r:0}; cellMap[k].n++; cellMap[k].r += f.rounds || 0; if (f.result === 'win') cellMap[k].w++;
+      lvls[L] = 1; ins[I] = 1;
+    });
+    var Ls = Object.keys(lvls).map(Number).sort(), Is = Object.keys(ins).map(Number).sort();
+    h += '<div class="group"><h3>By Level and Insight<small>win rate, fights played</small></h3><div class="dgrid-wrap"><table class="dgrid"><tr><th></th>' +
+      Is.map(function(I){ return '<th>Insight ' + I + '</th>'; }).join('') + '</tr>';
+    Ls.forEach(function(L){
+      h += '<tr><th>Level ' + L + '</th>' + Is.map(function(I){
+        var c = cellMap[L + ':' + I];
+        return c ? '<td>' + pct(c.w, c.n) + '%<small>' + c.n + (c.n === 1 ? ' fight' : ' fights') + '</small></td>' : '<td class="none">–</td>';
+      }).join('') + '</tr>';
+    });
+    h += '</table></div></div>';
+
+    h += '<div class="group"><h3>Did the tell help?<small>per round, by the tell you saw</small></h3><div class="tellgrid"><div class="h">Tell</div><div class="h">Rounds</div><div class="h">You were hit</div><div class="h">You landed one</div>';
+    [['press', TELLS.press.sym + ' Press', ''], ['hold', TELLS.hold.sym + ' Hold', ''], ['withdraw', TELLS.withdraw.sym + ' Withdraw', ''], ['nm', 'Nightmare (any)', ' nmr'], ['hidden', '? Smoke', '']].forEach(function(row){
+      var bt = byTell[row[0]]; if ((row[0] === 'hidden' || row[0] === 'nm') && !bt.n) return;
+      h += '<div class="tn' + row[2] + '">' + row[1] + '</div><div>' + bt.n + '</div><div>' + pct(bt.took, bt.n) + '%</div><div>' + pct(bt.landed, bt.n) + '%</div>';
+    });
+    h += '</div></div>';
+
+    var maxPer = 0; SAB_ORDER.forEach(function(id){ maxPer = Math.max(maxPer, cards[id] / fs.length); });
+    h += '<div class="group"><h3>Card use<small>plays per fight</small></h3><div class="legend"><span><i style="background:var(--sab)"></i>Steady side</span><span><i style="background:var(--exert)"></i>Exert side</span></div><div class="bars">';
+    SAB_ORDER.forEach(function(id){
+      var per = cards[id] / fs.length, xper = exertP[id] / fs.length, flag = cards[id] === 0;
+      var sw = maxPer ? ((per - xper) / maxPer * 100) : 0, xw = maxPer ? (xper / maxPer * 100) : 0;
+      h += '<div class="bar' + (flag ? ' flag' : '') + '"><span class="name">' + SAB[id].s.name + (flag ? ' · never' : '') + '</span><span class="track-b"><span class="fill" style="width:' + sw + '%"></span><span class="fill x" style="width:' + xw + '%"></span></span><span class="num">' + per.toFixed(1) + '</span></div>';
+    });
+    h += '</div></div>';
+
+    var maxLost = 0; SAB_ORDER.forEach(function(id){ maxLost = Math.max(maxLost, lostCount[id] || 0); });
+    if (maxLost){
+      h += '<div class="group"><h3>Cards wounded<small>times lost, all fights</small></h3><div class="bars">';
+      SAB_ORDER.slice().sort(function(a, b){ return (lostCount[b] || 0) - (lostCount[a] || 0); }).forEach(function(id){
+        var n = lostCount[id] || 0;
+        h += '<div class="bar"><span class="name">' + SAB[id].s.name + '</span><span class="track-b"><span class="fill bad" style="width:' + (n / maxLost * 100) + '%"></span></span><span class="num">' + n + '</span></div>';
+      });
+      h += '</div></div>';
+    }
+
+    h += '<div class="group"><h3>Recent fights</h3><div class="fights">';
+    fs.slice(0, 30).forEach(function(f){
+      var d = new Date(f.at), when = isNaN(d) ? '' : d.toLocaleString(undefined, {day:'numeric', month:'short', hour:'numeric', minute:'2-digit'});
+      var tags = leverTags(f.settings);
+      var label = f.result === 'win' ? 'Won' : f.result === 'alarm' ? 'Alarm' : (f.fall === 'spent' ? 'Spent' : 'Struck');
+      h += '<div class="fight"><span class="res ' + (f.result === 'win' ? 'win' : 'loss') + '">' + label + '</span><div><div>' + esc(f.hand) + ' in hand · ' + esc((f.lost || []).length) + ' lost · ' + esc(f.recovered) + ' recovered · he took ' + esc(f.lampWounds) + '</div>' +
+        '<div class="meta">' + (f.player ? '<b>' + esc(f.player) + '</b> · ' : '') + esc(when) + (tags.length ? ' · ' + esc(tags.join(', ')) : '') + (isMine(f) ? ' · you' : '') + '</div></div><span class="rn">' + esc(f.rounds) + ' rds</span></div>';
+    });
+    h += '</div></div>';
+    if (older) h += '<p class="lead" style="font-size:.84rem">' + older + ' fights from earlier rule versions aren’t counted here.</p>';
+    body.innerHTML = h;
+  }
+
+  // ---------- rules tab: levers ----------
+  var LEVERS = [
+    {k:'level', t:'Level', d:'The Lamplighter’s level sets how many wounds he takes before he falls.', opts:[[1,'1 · 4 wounds'],[2,'2 · 5 wounds'],[3,'3 · 6 wounds']]},
+    {k:'insight', t:'World Insight', d:'Turns this many of his cards to their Nightmare side before the fight starts. You find out which when they reach the top of his deck.', opts:[[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4']]},
+    {k:'ties', t:'Speed ties', d:'Who acts first when you and he have the same speed in a beat.', opts:[['him','He goes first (default)'],['together','Moves first, then strikes land together (old)']]},
+    {k:'facing', t:'Facing', d:'Strikes only hit in front, and nobody turns mid-round unless a card says so.', opts:[[true,'On (default)'],[false,'Off (old)']]},
+    {k:'study', t:'Study', d:'How much seeing his next card costs you.', opts:[['watch','Takes your whole round (default)'],['watchnm','Whole round, and the card turns Nightmare'],['full','One beat (original)']]},
+    {k:'breatheKeeps', t:'After you play Breathe', d:'Back to your hand means you can keep catching your breath, at the cost of a beat each time. Strict fatigue makes it a one-off, and fights last about 6 rounds.', opts:[[true,'Back to your hand (default)'],[false,'Fatigue pile (strict)']]},
+    {k:'breathe', t:'Breathe', d:'How many cards Breathe takes back. Second Wind always takes one more.', opts:[[2,'2 (default)'],[3,'3']]},
+    {k:'parryRecovers', t:'Parry and Riposte recover a card', d:'A successful parry takes 1 card back from your fatigue pile, so reading him well buys stamina.', opts:[[true,'On'],[false,'Off']]},
+    {k:'desperation', t:'Desperation', d:'Turn one of your cards to its Exert side each time you lose one.', opts:[[true,'On'],[false,'Off']]},
+    {k:'lampTurn', t:'Which of his cards a wound turns', d:'The top of his deck (you see it coming), or the card in play, shuffled back into his deck.', opts:[['top','Top of his deck'],['inplay','The card in play']]},
+    {k:'hookPull', t:'Hook pull', d:'Hook and Drag and Gaff Hook pull you in on a hit.', opts:[[true,'On'],[false,'Off']]},
+    {k:'rangeOnBack', t:'Strike ranges on card backs', d:'Turn it on if the tell alone feels like a coin flip.', opts:[[false,'Off'],[true,'On']]}
+  ];
+  function renderLevers(){
+    $('#levers').innerHTML = LEVERS.map(function(l){
+      return '<div class="lever"><div class="lt">' + l.t + '</div><div class="ld">' + l.d + '</div><div class="seg">' +
+        l.opts.map(function(o, i){ return '<button type="button" id="lever-' + l.k + '-' + i + '" data-lever="' + l.k + '" data-i="' + i + '" aria-pressed="' + (settings[l.k] === o[0]) + '">' + o[1] + '</button>'; }).join('') +
+        '</div></div>';
+    }).join('');
+    $('#lampHPRule').textContent = S.settings.lampHP;
+  }
+
+  // ---------- tabs ----------
+  function setTab(t){
+    tab = t;
+    ['duel','deck','tests','rules'].forEach(function(k){
+      $('#panel-' + k).hidden = k !== t;
+      $('#tab-btn-' + k).setAttribute('aria-selected', String(k === t));
+    });
+    persist();
+  }
+  function render(){ renderDuel(); renderDeckTab(); renderTests(); renderLevers(); persist(); }
+
+  // ---------- saving fights ----------
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  function saveLocal(rec){
+    localFights = lsGet('cd3-fights') || [];
+    localFights.unshift(rec);
+    localFights = localFights.slice(0, 200);
+    lsSet('cd3-fights', localFights);
+  }
+  // Google Sheet shared log (see shared-log/Code.gs). Posts are fire-and-forget: the browser can't read
+  // the reply, so a fight counts as sent once the request goes out without a network error.
+  async function postShared(recs){
+    if (!SHARED_LOG_URL || !recs.length) return false;
+    try {
+      await fetch(SHARED_LOG_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({fights:recs})});
+      return true;
+    } catch (e){ return false; }
+  }
+  function markSent(fids){
+    localFights = (lsGet('cd3-fights') || []).map(function(f){ return fids.indexOf(f.fid) >= 0 ? Object.assign({}, f, {sent:true}) : f; });
+    lsSet('cd3-fights', localFights);
+  }
+  async function sendUnsent(){
+    var unsent = (lsGet('cd3-fights') || []).filter(function(f){ return f.fid && f.sent === false; });
+    if (unsent.length && await postShared(unsent)) markSent(unsent.map(function(f){ return f.fid; }));
+  }
+  async function refreshShared(){
+    if (!SHARED_LOG_URL) return;
+    if (sharedState !== 'live') sharedState = 'loading';
+    renderTests();
+    try {
+      var r = await fetch(SHARED_LOG_URL, {method:'GET'});
+      var j = await r.json();
+      remoteFights = Array.isArray(j.fights) ? j.fights.filter(function(f){ return f && typeof f === 'object'; }) : [];
+      sharedState = 'live';
+    } catch (e){ sharedState = 'error'; }
+    renderTests();
+  }
+  async function saveFight(){
+    if (S.phase !== 'over' || S.saved || S.saving || dbState === 'pending') return;
+    S.saving = true;
+    var rec = buildRecord(S);
+    if (!S.fid) S.fid = Math.random().toString(36).slice(2, 12);
+    rec.fid = S.fid;
+    rec.player = playerName() || 'anonymous';
+    rec.device = myDevice();
+    if (!(db && dbState === 'live') && SHARED_LOG_URL){
+      rec.sent = false;
+      saveLocal(rec);
+      var ok = await postShared([rec]);
+      if (ok){ markSent([rec.fid]); S.saved = 'sent'; } else S.saved = 'local';
+      S.saving = false;
+      render();
+      if (ok) setTimeout(refreshShared, 1500);
+      return;
+    }
+    if (db && dbState === 'live'){
+      try { await db.collection('fights').add(rec); S.saved = 'shared'; }
+      catch (e){
+        if (e && e.code === 'unavailable'){
+          await sleep(600 + Math.random() * 800);
+          try { await db.collection('fights').add(rec); S.saved = 'shared'; } catch (e2){ saveLocal(rec); S.saved = 'local'; }
+        } else {
+          saveLocal(rec); S.saved = 'local';
+          S.saveErr = e && e.code === 'quota_exceeded' ? 'The shared log is full; delete old fights to log more there.' : 'The shared log refused the write.';
+        }
+      }
+    } else { saveLocal(rec); S.saved = 'local'; }
+    S.saving = false;
+    render();
+  }
+  async function initDb(){
+    var c = window.claude;
+    var noDb = function(){
+      dbState = 'none';
+      if (SHARED_LOG_URL){ sharedState = 'loading'; sendUnsent().then(refreshShared); }
+      renderTests(); saveFight();
+    };
+    if (!c || typeof c.use !== 'function'){ noDb(); return; }
+    try { db = await c.use('db'); } catch (e){ db = null; }
+    if (!db){ noDb(); return; }
+    dbState = 'live';
+    try {
+      db.collection('fights').orderBy('at', 'desc').limit(300).onSnapshot(function(snap){
+        remoteFights = snap.docs.filter(function(d){ return d.exists; }).map(function(d){ return Object.assign({id:d.id}, d.data()); });
+        renderTests();
+      }, function(){ dbState = 'none'; renderTests(); });
+    } catch (e){ dbState = 'none'; }
+    renderTests();
+    saveFight();
+  }
+
+  // ---------- actions ----------
+  // ---------- sharing the fight log ----------
+  function exportText(){
+    var fights = everyFight().filter(isMine).map(function(f){ var c = Object.assign({}, f); delete c.src; delete c.id; delete c.sent; return c; });
+    return JSON.stringify({game:'Ceryllian Duel', rules:'v6', exported:new Date().toISOString(), fights:fights});
+  }
+  function copyLog(){
+    var n = everyFight().filter(isMine).length, note = $('#copyNote'), ta = $('#logOut');
+    note.hidden = false;
+    if (!n){ note.textContent = 'No fights logged under the current rules yet.'; ta.hidden = true; return; }
+    var txt = exportText();
+    var fallback = function(){
+      note.textContent = 'Your browser blocked copying. The log is selected below: copy it from there.';
+      ta.hidden = false; ta.value = txt; ta.focus(); ta.select();
+    };
+    try {
+      navigator.clipboard.writeText(txt).then(function(){
+        ta.hidden = true;
+        note.textContent = 'Copied ' + n + (n === 1 ? ' fight' : ' fights') + '. Paste it into a message to the designer.';
+      }, fallback);
+    } catch (e){ fallback(); }
+  }
+  function dismissWelcome(){ lsSet('cd-welcomed', true); $('#welcome').hidden = true; }
+
+  function newFight(){
+    S = createFight(settings);
+    prev = {lost:0, lamp:0};
+    setTab('duel');
+    render();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function act(){
+    if (S.phase === 'plan') commit(S);
+    else if (S.phase === 'flipped' || S.phase === 'beat1') resolveNext(S);
+    else if (S.phase === 'beat2') endRound(S);
+    render();
+    if (S.phase === 'over') saveFight();
+  }
+  function bind(){
+    if (bound) return; bound = true;
+    document.addEventListener('input', function(e){
+      if (e.target && e.target.id === 'playerName') lsSet('cd-player', e.target.value.trim().slice(0, 30));
+    });
+    document.addEventListener('click', function(e){
+      var t = e.target.closest('button'); if (!t) return;
+      if (t.dataset.tab){ setTab(t.dataset.tab); return; }
+      if (t.id === 'welcomeRules'){ dismissWelcome(); setTab('rules'); window.scrollTo({top:0}); return; }
+      if (t.id === 'welcomeSkip'){ dismissWelcome(); return; }
+      if (t.id === 'copyLog'){ copyLog(); return; }
+      if (t.dataset.scope){ scope = t.dataset.scope; lsSet('cd-scope', scope); renderTests(); return; }
+      if (t.id === 'refreshShared'){ refreshShared(); return; }
+      if (t.id === 'actBtn'){ act(); return; }
+      if (t.id === 'newFight' || t.id === 'newWithLevers'){ newFight(); return; }
+      if (t.dataset.choose){ choose(S, t.dataset.choose); render(); if (S.phase === 'over') saveFight(); return; }
+      if (t.dataset.card){ placeCard(S, t.dataset.card); render(); return; }
+      if (t.dataset.clear != null){ clearSlot(S, +t.dataset.clear); render(); return; }
+      if (t.dataset.breath != null){ setBreath(S, +t.dataset.breath, t.dataset.on === '1'); render(); return; }
+      if (t.dataset.slot != null){ setOpt(S, +t.dataset.slot, +t.dataset.opt); render(); return; }
+      if (t.dataset.lever){
+        var l = LEVERS.filter(function(x){ return x.k === t.dataset.lever; })[0];
+        settings[l.k] = l.opts[+t.dataset.i][0];
+        lsSet('cd3-settings', settings);
+        renderLevers();
+      }
+    });
+  }
+
+  function start(data){
+    settings = loadSettings();
+    localFights = lsGet('cd3-fights') || [];
+    S = (data && validState(data.S)) ? data.S : null;
+    if (!S){ var ls = lsGet('cd3-state'); S = validState(ls) ? ls : createFight(settings); }
+    S.saving = false;
+    prev = {lost:S.lostOrder.length, lamp:S.lamp.wounds};
+    tab = (data && data.tab) || lsGet('cd-tab') || 'duel';
+    scope = lsGet('cd-scope') === 'me' ? 'me' : 'all';
+    bind();
+    if (!lsGet('cd-welcomed')) $('#welcome').hidden = false;
+    setTab(tab);
+    render();
+    initDb();
+  }
+  var hot = window.claude && window.claude.hot;
+  if (hot && typeof hot.snapshot === 'function') hot.snapshot(function(){ return {S:S, tab:tab}; });
+  if (hot && typeof hot.ready === 'function') hot.ready(start);
+  else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
