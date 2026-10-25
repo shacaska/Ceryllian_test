@@ -30,6 +30,16 @@ The first fight creates a sheet called *Ceryllian Duel playtest log* in your Goo
 
 Until the URL is filled in, fights stay on each player's device. Players can still send them on with **Copy my fight log** on the Playtests tab.
 
+### If fights aren't showing up
+
+Open the web app URL in a private or incognito window. It should show `{"fights":[...]}`, and opening it creates the sheet if there isn't one yet. If it shows something else:
+
+- **A Google sign-in page, or "You need access":** the web app isn't public. In the script editor, go to **Deploy → Manage deployments**, click the pencil, set **Who has access** to *Anyone* and **Version** to *New version*, then **Deploy**. The URL stays the same.
+- **"Authorization is required to perform that action":** in the editor, choose `doGet` in the toolbar's function menu and click **Run**. Allow access when asked, then reload the URL.
+- **"Script function not found: doGet":** the code wasn't saved before deploying. Save it, then deploy a new version as in the first fix.
+
+The script editor's **Executions** page, in the left sidebar, lists every request with any error. Code changes only reach the live URL once you deploy a new version. Fights that didn't get through stay on each player's device and are sent again the next time the log can be reached.
+
 Good to know:
 - The web app URL ends up in the public game file, so anyone with the game can add fights to the log. That's fine for a playtest. If it ever gets spammed, deploy a new version and change the URL.
 - The only thing logged about a player is the name they type and a random device ID.

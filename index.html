@@ -1432,7 +1432,10 @@ function buildRecord(S){
     if (S.phase !== 'over'){ w.hidden = true; w.innerHTML = ''; return; }
     var title = S.result === 'win' ? 'The Lamplighter falls' : S.result === 'alarm' ? 'The watch arrives' : (S.fallReason === 'spent' ? 'Nothing left in your hands' : 'Struck down');
     var o = roundsSummary(S.rounds);
-    var save = S.saved === 'shared' || S.saved === 'sent' ? 'Logged to the shared playtest log' + (playerName() ? ' as ' + playerName() + '.' : '. Add your name on the Playtests tab so your fights are easy to spot.') :
+    var who = playerName() ? ' as ' + playerName() + '.' : '. Add your name on the Playtests tab so your fights are easy to spot.';
+    var save = S.saved === 'shared' || S.saved === 'logged' ? 'Logged to the shared playtest log' + who :
+      S.saved === 'sent' ? (sharedState === 'error' ? 'Kept on this device. The shared log can’t be reached right now, so it will be sent again next time.' : 'Sending to the shared playtest log…') :
+      S.saved === 'unconfirmed' ? 'Kept on this device. It hasn’t shown up in the shared log yet, so it will be sent again next time.' :
       S.saved === 'local' ? 'Logged on this device.' + (S.saveErr ? ' ' + S.saveErr : (SHARED_LOG_URL ? ' It will be sent to the shared log next time you’re online.' : '')) : 'Logging this fight…';
     w.innerHTML = '<div class="result"><div class="eyebrow">' + (S.result === 'win' ? 'Victory' : 'Defeat') + ' · round ' + S.round + '</div><h2>' + title + '</h2>' +
       '<div class="kv"><div><span class="k">In hand</span><span class="v">' + zone(S, 'hand').length + '</span></div><div><span class="k">Lost</span><span class="v">' + zone(S, 'lost').length + '</span></div><div><span class="k">Recovered</span><span class="v">' + S.recovered + '</span></div><div><span class="k">He turned</span><span class="v">' + turnedCount(S) + '</span></div></div>' +
@@ -1692,8 +1695,10 @@ function buildRecord(S){
     localFights = localFights.slice(0, 200);
     lsSet('cd3-fights', localFights);
   }
-  // Google Sheet shared log (see shared-log/Code.gs). Posts are fire-and-forget: the browser can't read
-  // the reply, so a fight counts as sent once the request goes out without a network error.
+  // Google Sheet shared log (see shared-log/Code.gs). The browser can't read the reply to a post, so a
+  // fight only counts as logged once it shows up when the log is read back. Whenever the log can be read,
+  // this device's fights that it doesn't have are sent again.
+  var resent = {};
   async function postShared(recs){
     if (!SHARED_LOG_URL || !recs.length) return false;
     try {
@@ -1702,12 +1707,23 @@ function buildRecord(S){
     } catch (e){ return false; }
   }
   function markSent(fids){
-    localFights = (lsGet('cd3-fights') || []).map(function(f){ return fids.indexOf(f.fid) >= 0 ? Object.assign({}, f, {sent:true}) : f; });
+    var now = Date.now();
+    localFights = (lsGet('cd3-fights') || []).map(function(f){ return fids.indexOf(f.fid) >= 0 ? Object.assign({}, f, {sent:true, sentAt:now}) : f; });
     lsSet('cd3-fights', localFights);
   }
   async function sendUnsent(){
     var unsent = (lsGet('cd3-fights') || []).filter(function(f){ return f.fid && f.sent === false; });
     if (unsent.length && await postShared(unsent)) markSent(unsent.map(function(f){ return f.fid; }));
+  }
+  // This device's fights the log doesn't have. A fight sent in the last two minutes gets time to arrive,
+  // and each fight is sent again at most once per visit.
+  function missingFromLog(){
+    var have = {}, now = Date.now(), oldest = 0;
+    remoteFights.forEach(function(f){ if (f.fid) have[f.fid] = true; });
+    if (remoteFights.length >= 1000) oldest = Math.min.apply(null, remoteFights.map(function(f){ return Date.parse(f.at) || Infinity; }));
+    return (lsGet('cd3-fights') || []).filter(function(f){
+      return f.fid && f.result && !have[f.fid] && !resent[f.fid] && (f.sent === false || !f.sentAt || now - f.sentAt >= 120000) && (Date.parse(f.at) || 0) > oldest;
+    });
   }
   async function refreshShared(){
     if (!SHARED_LOG_URL) return;
@@ -1716,10 +1732,32 @@ function buildRecord(S){
     try {
       var r = await fetch(SHARED_LOG_URL, {method:'GET'});
       var j = await r.json();
-      remoteFights = Array.isArray(j.fights) ? j.fights.filter(function(f){ return f && typeof f === 'object'; }) : [];
+      if (!Array.isArray(j.fights)) throw new Error('not a fight log');
+      remoteFights = j.fights.filter(function(f){ return f && typeof f === 'object'; });
       sharedState = 'live';
     } catch (e){ sharedState = 'error'; }
-    renderTests();
+    if (sharedState === 'live' && S.fid && /^(sent|unconfirmed|local)$/.test(S.saved || '') && remoteFights.some(function(f){ return f.fid === S.fid; })) S.saved = 'logged';
+    render();
+    if (sharedState !== 'live') return;
+    var missing = missingFromLog().slice(0, 50);
+    if (!missing.length) return;
+    missing.forEach(function(f){ resent[f.fid] = true; });
+    if (await postShared(missing)){ markSent(missing.map(function(f){ return f.fid; })); setTimeout(refreshShared, 4000); }
+  }
+  function markUnsent(fid){
+    localFights = (lsGet('cd3-fights') || []).map(function(f){ return f.fid === fid ? Object.assign({}, f, {sent:false}) : f; });
+    lsSet('cd3-fights', localFights);
+  }
+  // After a fight: read the log back until the fight shows up (Google can take a few seconds). If the log
+  // can't be read, or the fight never shows up, it goes back in the queue to send at the next chance.
+  function confirmLogged(tries){
+    var fid = S.fid;
+    refreshShared().then(function(){
+      if (S.fid !== fid || S.saved !== 'sent') return;
+      if (sharedState !== 'live'){ markUnsent(fid); return; }
+      if (tries < 3) setTimeout(function(){ confirmLogged(tries + 1); }, 5000);
+      else { markUnsent(fid); S.saved = 'unconfirmed'; render(); }
+    });
   }
   async function saveFight(){
     if (S.phase !== 'over' || S.saved || S.saving || dbState === 'pending') return;
@@ -1736,7 +1774,7 @@ function buildRecord(S){
       if (ok){ markSent([rec.fid]); S.saved = 'sent'; } else S.saved = 'local';
       S.saving = false;
       render();
-      if (ok) setTimeout(refreshShared, 1500);
+      if (ok) setTimeout(function(){ confirmLogged(1); }, 3000);
       return;
     }
     if (db && dbState === 'live'){
